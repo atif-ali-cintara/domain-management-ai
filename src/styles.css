@@ -91,15 +91,35 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  /* Sidebar = #F1F5F9 */
-  --sidebar: oklch(0.968 0.007 247.896);
-  --sidebar-foreground: oklch(0.21 0.034 264.665);
-  --sidebar-primary: oklch(0.546 0.215 262.881);
+  /* Sidebar = deep navy */
+  --sidebar: oklch(0.2 0.04 265);
+  --sidebar-foreground: oklch(0.86 0.02 255);
+  --sidebar-primary: oklch(0.62 0.2 262);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(1 0 0);
-  --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.546 0.215 262.881);
+  --sidebar-accent: oklch(0.26 0.05 265);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.3 0.04 265);
+  --sidebar-ring: oklch(0.62 0.2 262);
+
+  /* Status badge tokens */
+  --status-healthy: oklch(0.55 0.16 155);
+  --status-healthy-bg: oklch(0.95 0.05 155);
+  --status-warning: oklch(0.58 0.15 70);
+  --status-warning-bg: oklch(0.96 0.07 80);
+  --status-critical: oklch(0.58 0.22 25);
+  --status-critical-bg: oklch(0.95 0.05 25);
+  --status-info: oklch(0.55 0.17 250);
+  --status-info-bg: oklch(0.95 0.04 250);
+  --status-neutral: oklch(0.5 0.02 255);
+  --status-neutral-bg: oklch(0.94 0.005 255);
+
+  /* Soft KPI tile backgrounds */
+  --tile-blue: oklch(0.95 0.04 250);
+  --tile-red: oklch(0.95 0.04 25);
+  --tile-violet: oklch(0.95 0.05 290);
+  --tile-amber: oklch(0.96 0.06 80);
+  --tile-emerald: oklch(0.95 0.05 155);
+  --tile-orange: oklch(0.96 0.06 50);
 }
 
 
