@@ -76,6 +76,91 @@ async function fetchGoDaddy(): Promise<{ list: GoDaddyDomain[]; error?: string }
   }
 }
 
+type NamecheapDomain = {
+  domain: string;
+  created?: string;
+  expires?: string;
+  autoRenew?: boolean;
+  isExpired?: boolean;
+  isLocked?: boolean;
+};
+
+async function getClientIp(): Promise<string> {
+  try {
+    const r = await fetch("https://api.ipify.org?format=json");
+    const j = (await r.json()) as { ip: string };
+    return j.ip;
+  } catch {
+    return "127.0.0.1";
+  }
+}
+
+function parseNamecheapXml(xml: string): NamecheapDomain[] {
+  const out: NamecheapDomain[] = [];
+  const re = /<Domain\s+([^/]*?)\/>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml))) {
+    const attrs: Record<string, string> = {};
+    const a = /(\w+)="([^"]*)"/g;
+    let am: RegExpExecArray | null;
+    while ((am = a.exec(m[1]))) attrs[am[1]] = am[2];
+    if (!attrs.Name) continue;
+    out.push({
+      domain: attrs.Name,
+      created: attrs.Created,
+      expires: attrs.Expires,
+      autoRenew: attrs.AutoRenew === "true",
+      isExpired: attrs.IsExpired === "true",
+      isLocked: attrs.IsLocked === "true",
+    });
+  }
+  return out;
+}
+
+function ncDateToIso(d?: string): string | undefined {
+  if (!d) return undefined;
+  // Namecheap returns MM/DD/YYYY
+  const [mm, dd, yyyy] = d.split("/");
+  if (!mm || !dd || !yyyy) return undefined;
+  return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T00:00:00Z`;
+}
+
+async function fetchNamecheap(): Promise<{ list: NamecheapDomain[]; error?: string }> {
+  const apiKey = process.env.NAMECHEAP_API_KEY;
+  const apiUser = process.env.NAMECHEAP_API_USER;
+  if (!apiKey || !apiUser) {
+    return { list: [], error: "Namecheap credentials missing" };
+  }
+  const ip = await getClientIp();
+  const out: NamecheapDomain[] = [];
+  try {
+    for (let page = 1; page <= 20; page++) {
+      const url = new URL("https://api.namecheap.com/xml.response");
+      url.searchParams.set("ApiUser", apiUser);
+      url.searchParams.set("ApiKey", apiKey);
+      url.searchParams.set("UserName", apiUser);
+      url.searchParams.set("Command", "namecheap.domains.getList");
+      url.searchParams.set("ClientIp", ip);
+      url.searchParams.set("PageSize", "100");
+      url.searchParams.set("Page", String(page));
+      const res = await fetch(url);
+      const text = await res.text();
+      if (!res.ok) return { list: out, error: `Namecheap ${res.status}: ${text.slice(0, 200)}` };
+      if (text.includes('Status="ERROR"')) {
+        const err = /<Error[^>]*>([^<]+)<\/Error>/.exec(text)?.[1] ?? "Namecheap API error";
+        return { list: out, error: `Namecheap: ${err} (whitelist IP ${ip})` };
+      }
+      const batch = parseNamecheapXml(text);
+      if (batch.length === 0) break;
+      out.push(...batch);
+      if (batch.length < 100) break;
+    }
+    return { list: out };
+  } catch (e) {
+    return { list: out, error: e instanceof Error ? e.message : "Namecheap network error" };
+  }
+}
+
 export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): Promise<Portfolio> => {
   // Build domain → {company, identity} lookup from CSV
   const lookup = new Map<string, { company: string; identity: string }>();
