@@ -19,6 +19,7 @@ import { Route as AppRegistrarsRouteImport } from './routes/_app.registrars'
 import { Route as AppPaymentMethodsRouteImport } from './routes/_app.payment-methods'
 import { Route as AppImportExportRouteImport } from './routes/_app.import-export'
 import { Route as AppIdentitiesRouteImport } from './routes/_app.identities'
+import { Route as AppHunterRouteImport } from './routes/_app.hunter'
 import { Route as AppDomainsRouteImport } from './routes/_app.domains'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
@@ -73,6 +74,11 @@ const AppIdentitiesRoute = AppIdentitiesRouteImport.update({
   path: '/identities',
   getParentRoute: () => AppRoute,
 } as any)
+const AppHunterRoute = AppHunterRouteImport.update({
+  id: '/hunter',
+  path: '/hunter',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDomainsRoute = AppDomainsRouteImport.update({
   id: '/domains',
   path: '/domains',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/companies': typeof AppCompaniesRoute
   '/dashboard': typeof AppDashboardRoute
   '/domains': typeof AppDomainsRoute
+  '/hunter': typeof AppHunterRoute
   '/identities': typeof AppIdentitiesRoute
   '/import-export': typeof AppImportExportRoute
   '/payment-methods': typeof AppPaymentMethodsRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/companies': typeof AppCompaniesRoute
   '/dashboard': typeof AppDashboardRoute
   '/domains': typeof AppDomainsRoute
+  '/hunter': typeof AppHunterRoute
   '/identities': typeof AppIdentitiesRoute
   '/import-export': typeof AppImportExportRoute
   '/payment-methods': typeof AppPaymentMethodsRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_app/companies': typeof AppCompaniesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/domains': typeof AppDomainsRoute
+  '/_app/hunter': typeof AppHunterRoute
   '/_app/identities': typeof AppIdentitiesRoute
   '/_app/import-export': typeof AppImportExportRoute
   '/_app/payment-methods': typeof AppPaymentMethodsRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/dashboard'
     | '/domains'
+    | '/hunter'
     | '/identities'
     | '/import-export'
     | '/payment-methods'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/dashboard'
     | '/domains'
+    | '/hunter'
     | '/identities'
     | '/import-export'
     | '/payment-methods'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/_app/companies'
     | '/_app/dashboard'
     | '/_app/domains'
+    | '/_app/hunter'
     | '/_app/identities'
     | '/_app/import-export'
     | '/_app/payment-methods'
@@ -267,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIdentitiesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/hunter': {
+      id: '/_app/hunter'
+      path: '/hunter'
+      fullPath: '/hunter'
+      preLoaderRoute: typeof AppHunterRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/domains': {
       id: '/_app/domains'
       path: '/domains'
@@ -303,6 +322,7 @@ interface AppRouteChildren {
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDomainsRoute: typeof AppDomainsRoute
+  AppHunterRoute: typeof AppHunterRoute
   AppIdentitiesRoute: typeof AppIdentitiesRoute
   AppImportExportRoute: typeof AppImportExportRoute
   AppPaymentMethodsRoute: typeof AppPaymentMethodsRoute
@@ -318,6 +338,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCompaniesRoute: AppCompaniesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDomainsRoute: AppDomainsRoute,
+  AppHunterRoute: AppHunterRoute,
   AppIdentitiesRoute: AppIdentitiesRoute,
   AppImportExportRoute: AppImportExportRoute,
   AppPaymentMethodsRoute: AppPaymentMethodsRoute,

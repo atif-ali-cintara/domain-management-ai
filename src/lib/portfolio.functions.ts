@@ -125,46 +125,76 @@ function ncDateToIso(d?: string): string | undefined {
   return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T00:00:00Z`;
 }
 
-async function fetchNamecheap(): Promise<{ list: NamecheapDomain[]; error?: string }> {
-  const apiKey = process.env.NAMECHEAP_API_KEY;
-  const apiUser = process.env.NAMECHEAP_API_USER;
-  if (!apiKey || !apiUser) {
-    return { list: [], error: "Namecheap credentials missing" };
-  }
-  const ip = await getClientIp();
-  const out: NamecheapDomain[] = [];
+type NcAccount = { label: string; apiKey: string; apiUser: string };
+type NcDomainWithAccount = NamecheapDomain & { account: string };
+
+async function fetchNamecheapAccount(
+  account: NcAccount,
+  ip: string,
+): Promise<{ list: NcDomainWithAccount[]; error?: string }> {
+  const out: NcDomainWithAccount[] = [];
   try {
     for (let page = 1; page <= 20; page++) {
       const url = new URL("https://api.namecheap.com/xml.response");
-      url.searchParams.set("ApiUser", apiUser);
-      url.searchParams.set("ApiKey", apiKey);
-      url.searchParams.set("UserName", apiUser);
+      url.searchParams.set("ApiUser", account.apiUser);
+      url.searchParams.set("ApiKey", account.apiKey);
+      url.searchParams.set("UserName", account.apiUser);
       url.searchParams.set("Command", "namecheap.domains.getList");
       url.searchParams.set("ClientIp", ip);
       url.searchParams.set("PageSize", "100");
       url.searchParams.set("Page", String(page));
       const res = await fetch(url);
       const text = await res.text();
-      if (!res.ok) return { list: out, error: `Namecheap HTTP ${res.status} (sent ClientIp=${ip}): ${text.slice(0, 300)}` };
-      // Namecheap error detection — match Status="ERROR" with any quote style/whitespace
+      if (!res.ok)
+        return { list: out, error: `Namecheap [${account.label}] HTTP ${res.status} (ip=${ip}): ${text.slice(0, 200)}` };
       if (/Status\s*=\s*["']ERROR["']/i.test(text)) {
         const err = /<Error[^>]*>([^<]+)<\/Error>/i.exec(text)?.[1] ?? "Namecheap API error";
-        return { list: out, error: `Namecheap: ${err} (sent ClientIp=${ip})` };
+        return { list: out, error: `Namecheap [${account.label}]: ${err} (ip=${ip})` };
       }
       const batch = parseNamecheapXml(text);
       if (batch.length === 0) {
-        if (page === 1) {
-          return { list: out, error: `Namecheap: 0 domains parsed (sent ClientIp=${ip}). Response head: ${text.slice(0, 300)}` };
-        }
+        if (page === 1)
+          return {
+            list: out,
+            error: `Namecheap [${account.label}]: 0 domains parsed (ip=${ip}). Head: ${text.slice(0, 200)}`,
+          };
         break;
       }
-      out.push(...batch);
+      for (const d of batch) out.push({ ...d, account: account.label });
       if (batch.length < 100) break;
     }
     return { list: out };
   } catch (e) {
-    return { list: out, error: e instanceof Error ? e.message : "Namecheap network error" };
+    return { list: out, error: e instanceof Error ? e.message : `Namecheap [${account.label}] network error` };
   }
+}
+
+async function fetchNamecheap(): Promise<{ list: NcDomainWithAccount[]; errors: string[] }> {
+  const accounts: NcAccount[] = [];
+  if (process.env.NAMECHEAP_API_KEY && process.env.NAMECHEAP_API_USER) {
+    accounts.push({
+      label: `Revcloud (${process.env.NAMECHEAP_API_USER})`,
+      apiKey: process.env.NAMECHEAP_API_KEY,
+      apiUser: process.env.NAMECHEAP_API_USER,
+    });
+  }
+  if (process.env.NAMECHEAP_API_KEY_2 && process.env.NAMECHEAP_API_USER_2) {
+    accounts.push({
+      label: `Namecheap (${process.env.NAMECHEAP_API_USER_2})`,
+      apiKey: process.env.NAMECHEAP_API_KEY_2,
+      apiUser: process.env.NAMECHEAP_API_USER_2,
+    });
+  }
+  if (accounts.length === 0) return { list: [], errors: ["Namecheap credentials missing"] };
+  const ip = await getClientIp();
+  const results = await Promise.all(accounts.map((a) => fetchNamecheapAccount(a, ip)));
+  const list: NcDomainWithAccount[] = [];
+  const errors: string[] = [];
+  for (const r of results) {
+    list.push(...r.list);
+    if (r.error) errors.push(r.error);
+  }
+  return { list, errors };
 }
 
 export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): Promise<Portfolio> => {
@@ -177,7 +207,7 @@ export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): 
   const errors: string[] = [];
   const [gdRes, ncRes] = await Promise.all([fetchGoDaddy(), fetchNamecheap()]);
   if (gdRes.error) errors.push(gdRes.error);
-  if (ncRes.error) errors.push(ncRes.error);
+  if (ncRes.errors.length) errors.push(...ncRes.errors);
 
   const now = Date.now();
   const fromGoDaddy: PortfolioDomain[] = gdRes.list.map((g) => {
@@ -207,7 +237,7 @@ export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): 
     return {
       domain: g.domain,
       provider: "Namecheap",
-      account: "Revcloud (Bill Raney)",
+      account: g.account,
       status: g.isExpired ? "EXPIRED" : g.isLocked ? "LOCKED" : "ACTIVE",
       expires: expIso ?? null,
       expiresInDays,
