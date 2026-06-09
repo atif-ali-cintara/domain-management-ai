@@ -168,6 +168,12 @@ export const domains = [
     "kind": "brand"
   },
   {
+    "domain": "fluxaleads.com",
+    "company": "Fluxa Leads LLC",
+    "owner": "Iqra Rafique",
+    "kind": "brand"
+  },
+  {
     "domain": "unitedhomebuyernetwork.com",
     "company": "Fluxa Leads LLC",
     "owner": "Iqra Rafique",
@@ -198,6 +204,12 @@ export const domains = [
     "kind": "primary"
   },
   {
+    "domain": "revxhomeservices.com",
+    "company": "RevX Home Services",
+    "owner": "Sabtain Ashiq",
+    "kind": "brand"
+  },
+  {
     "domain": "tophomereports.com",
     "company": "RevX Home Services",
     "owner": "Sabtain Ashiq",
@@ -208,6 +220,12 @@ export const domains = [
     "company": "People Amplify (SMC Pvt) LTD",
     "owner": "Abdullah Raheem",
     "kind": "primary"
+  },
+  {
+    "domain": "peopleamplify.com",
+    "company": "People Amplify (SMC Pvt) LTD",
+    "owner": "Abdullah Raheem",
+    "kind": "brand"
   },
   {
     "domain": "betterpeopleops.com",
@@ -235,6 +253,12 @@ export const domains = [
   },
   {
     "domain": "ad4.io",
+    "company": "Ardexa LLC",
+    "owner": "Khalid Mehmood",
+    "kind": "brand"
+  },
+  {
+    "domain": "ardexaai.com",
     "company": "Ardexa LLC",
     "owner": "Khalid Mehmood",
     "kind": "brand"
@@ -270,6 +294,12 @@ export const domains = [
     "kind": "primary"
   },
   {
+    "domain": "growthrethink.com",
+    "company": "GROWTH RETHINK (SMC-PRIVATE) LIMITED",
+    "owner": "Maheen Kousar",
+    "kind": "brand"
+  },
+  {
     "domain": "trackinglinktech.com",
     "company": "TRACKING LINK TECH (SMC-PRIVATE) LIMITED",
     "owner": "Muhammad Kamran",
@@ -277,6 +307,12 @@ export const domains = [
   },
   {
     "domain": "toptraktech.com",
+    "company": "TRACKING LINK TECH (SMC-PRIVATE) LIMITED",
+    "owner": "Muhammad Kamran",
+    "kind": "brand"
+  },
+  {
+    "domain": "trackinglinktech.com",
     "company": "TRACKING LINK TECH (SMC-PRIVATE) LIMITED",
     "owner": "Muhammad Kamran",
     "kind": "brand"
@@ -298,12 +334,6 @@ export const domains = [
     "company": "TRACKING LINK TECH (SMC-PRIVATE) LIMITED",
     "owner": "Muhammad Kamran",
     "kind": "brand"
-  },
-  {
-    "domain": "tbd",
-    "company": "TBD - Zaman",
-    "owner": "Muhammad Zaman",
-    "kind": "primary"
   },
   {
     "domain": "agentcoresystems.com",
@@ -364,6 +394,12 @@ export const domains = [
     "company": "Hownerly Nexa LLC",
     "owner": "Muhammad Danish",
     "kind": "primary"
+  },
+  {
+    "domain": "hownerlynexa.com",
+    "company": "Hownerly Nexa LLC",
+    "owner": "Muhammad Danish",
+    "kind": "brand"
   },
   {
     "domain": "curbnexa.com",
