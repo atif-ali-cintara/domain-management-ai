@@ -45,16 +45,16 @@ export type Branch = {
 };
 
 async function deepseekJSON(system: string, user: string, temperature = 1.0): Promise<unknown> {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) throw new Error("DEEPSEEK_API_KEY not configured");
-  const res = await fetch("https://api.deepseek.com/chat/completions", {
+  const apiKey = process.env.LOVABLE_API_KEY;
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "deepseek-chat",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
@@ -65,7 +65,7 @@ async function deepseekJSON(system: string, user: string, temperature = 1.0): Pr
   });
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`DeepSeek error ${res.status}: ${t.slice(0, 200)}`);
+    throw new Error(`AI gateway ${res.status}: ${t.slice(0, 200)}`);
   }
   const data = await res.json();
   const content: string = data.choices?.[0]?.message?.content ?? "";
