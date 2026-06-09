@@ -145,13 +145,19 @@ async function fetchNamecheap(): Promise<{ list: NamecheapDomain[]; error?: stri
       url.searchParams.set("Page", String(page));
       const res = await fetch(url);
       const text = await res.text();
-      if (!res.ok) return { list: out, error: `Namecheap ${res.status}: ${text.slice(0, 200)}` };
-      if (text.includes('Status="ERROR"')) {
-        const err = /<Error[^>]*>([^<]+)<\/Error>/.exec(text)?.[1] ?? "Namecheap API error";
-        return { list: out, error: `Namecheap: ${err} (whitelist IP ${ip})` };
+      if (!res.ok) return { list: out, error: `Namecheap HTTP ${res.status} (sent ClientIp=${ip}): ${text.slice(0, 300)}` };
+      // Namecheap error detection — match Status="ERROR" with any quote style/whitespace
+      if (/Status\s*=\s*["']ERROR["']/i.test(text)) {
+        const err = /<Error[^>]*>([^<]+)<\/Error>/i.exec(text)?.[1] ?? "Namecheap API error";
+        return { list: out, error: `Namecheap: ${err} (sent ClientIp=${ip})` };
       }
       const batch = parseNamecheapXml(text);
-      if (batch.length === 0) break;
+      if (batch.length === 0) {
+        if (page === 1) {
+          return { list: out, error: `Namecheap: 0 domains parsed (sent ClientIp=${ip}). Response head: ${text.slice(0, 300)}` };
+        }
+        break;
+      }
       out.push(...batch);
       if (batch.length < 100) break;
     }
