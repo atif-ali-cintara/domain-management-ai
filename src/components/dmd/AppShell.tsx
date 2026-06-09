@@ -14,6 +14,7 @@ import {
   Settings,
   Bell,
   HelpCircle,
+  Sparkles,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
@@ -22,6 +23,7 @@ type NavItem = { to: string; label: string; icon: ComponentType<SVGProps<SVGSVGE
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/domains", label: "Domains", icon: Globe },
+  { to: "/hunter", label: "Domain Hunter", icon: Sparkles },
   { to: "/identities", label: "Identities", icon: Users },
   { to: "/companies", label: "Companies", icon: Building2 },
   { to: "/registrars", label: "Registrar Accounts", icon: KeyRound },
