@@ -114,7 +114,7 @@ export const companies = [
     "owner": "Iqra Rafique",
     "primary": "CasaCresta.com"
   }
-] as const;
+];
 
 export const identities = [
   "Abdullah Raheem",
@@ -134,7 +134,7 @@ export const identities = [
   "Sabtain Ashiq",
   "Ume Kalsoom",
   "Yash Patel"
-] as const;
+];
 
 export const domains = [
   {
@@ -389,4 +389,4 @@ export const domains = [
     "owner": "Iqra Rafique",
     "kind": "primary"
   }
-] as const;
+];
