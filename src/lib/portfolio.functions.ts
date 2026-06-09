@@ -207,7 +207,7 @@ export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): 
   const errors: string[] = [];
   const [gdRes, ncRes] = await Promise.all([fetchGoDaddy(), fetchNamecheap()]);
   if (gdRes.error) errors.push(gdRes.error);
-  if (ncRes.error) errors.push(ncRes.error);
+  if (ncRes.errors.length) errors.push(...ncRes.errors);
 
   const now = Date.now();
   const fromGoDaddy: PortfolioDomain[] = gdRes.list.map((g) => {
@@ -237,7 +237,7 @@ export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): 
     return {
       domain: g.domain,
       provider: "Namecheap",
-      account: "Revcloud (Bill Raney)",
+      account: g.account,
       status: g.isExpired ? "EXPIRED" : g.isLocked ? "LOCKED" : "ACTIVE",
       expires: expIso ?? null,
       expiresInDays,
