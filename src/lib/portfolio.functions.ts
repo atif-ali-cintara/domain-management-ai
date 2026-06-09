@@ -169,11 +169,12 @@ export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): 
   }
 
   const errors: string[] = [];
-  const { list: gd, error: gdErr } = await fetchGoDaddy();
-  if (gdErr) errors.push(gdErr);
+  const [gdRes, ncRes] = await Promise.all([fetchGoDaddy(), fetchNamecheap()]);
+  if (gdRes.error) errors.push(gdRes.error);
+  if (ncRes.error) errors.push(ncRes.error);
 
   const now = Date.now();
-  const domains: PortfolioDomain[] = gd.map((g) => {
+  const fromGoDaddy: PortfolioDomain[] = gdRes.list.map((g) => {
     const meta = lookup.get(g.domain.toLowerCase());
     const expires = g.expires ? new Date(g.expires) : null;
     const expiresInDays = expires ? Math.round((expires.getTime() - now) / 86_400_000) : null;
@@ -190,6 +191,36 @@ export const getPortfolio = createServerFn({ method: "GET" }).handler(async (): 
       identity: meta?.identity ?? null,
     };
   });
+
+  const fromNamecheap: PortfolioDomain[] = ncRes.list.map((g) => {
+    const meta = lookup.get(g.domain.toLowerCase());
+    const expIso = ncDateToIso(g.expires);
+    const createdIso = ncDateToIso(g.created);
+    const expires = expIso ? new Date(expIso) : null;
+    const expiresInDays = expires ? Math.round((expires.getTime() - now) / 86_400_000) : null;
+    return {
+      domain: g.domain,
+      provider: "Namecheap",
+      account: "Revcloud (Bill Raney)",
+      status: g.isExpired ? "EXPIRED" : g.isLocked ? "LOCKED" : "ACTIVE",
+      expires: expIso ?? null,
+      expiresInDays,
+      autoRenew: !!g.autoRenew,
+      createdAt: createdIso ?? null,
+      company: meta?.company ?? null,
+      identity: meta?.identity ?? null,
+    };
+  });
+
+  // Merge, dedupe by domain (prefer GoDaddy if duplicated)
+  const seen = new Set<string>();
+  const domains: PortfolioDomain[] = [];
+  for (const d of [...fromGoDaddy, ...fromNamecheap]) {
+    const k = d.domain.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    domains.push(d);
+  }
 
   // Provider counts
   const providerMap: Record<string, number> = {};
