@@ -97,7 +97,7 @@ async function getClientIp(): Promise<string> {
 
 function parseNamecheapXml(xml: string): NamecheapDomain[] {
   const out: NamecheapDomain[] = [];
-  const re = /<Domain\s+([^/]*?)\/>/g;
+  const re = /<Domain\b([^>]*?)\/?>/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml))) {
     const attrs: Record<string, string> = {};
