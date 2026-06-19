@@ -91,15 +91,17 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  /* Sidebar = deep navy */
-  --sidebar: oklch(0.2 0.04 265);
-  --sidebar-foreground: oklch(0.86 0.02 255);
-  --sidebar-primary: oklch(0.62 0.2 262);
+  /* Sidebar (Alyson brand) = soft neutral #F1F5F9 with calm-blue accents */
+  --sidebar: oklch(0.968 0.007 247.896);
+  --sidebar-foreground: oklch(0.27 0.034 264.665);
+  --sidebar-primary: oklch(0.546 0.215 262.881);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.26 0.05 265);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.3 0.04 265);
-  --sidebar-ring: oklch(0.62 0.2 262);
+  --sidebar-accent: oklch(1 0 0);
+  --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.546 0.215 262.881);
+  /* Alyson signature orange (logo ring) */
+  --brand-alyson: oklch(0.78 0.17 65);
 
   /* Status badge tokens */
   --status-healthy: oklch(0.55 0.16 155);

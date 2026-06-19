@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppUsageRouteImport } from './routes/_app.usage'
@@ -24,7 +25,13 @@ import { Route as AppDomainsRouteImport } from './routes/_app.domains'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
+import { Route as AppAccountAccessRouteImport } from './routes/_app.account-access'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -99,9 +106,16 @@ const AppAuditLogRoute = AppAuditLogRouteImport.update({
   path: '/audit-log',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAccountAccessRoute = AppAccountAccessRouteImport.update({
+  id: '/account-access',
+  path: '/account-access',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/account-access': typeof AppAccountAccessRoute
   '/audit-log': typeof AppAuditLogRoute
   '/companies': typeof AppCompaniesRoute
   '/dashboard': typeof AppDashboardRoute
@@ -118,6 +132,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/account-access': typeof AppAccountAccessRoute
   '/audit-log': typeof AppAuditLogRoute
   '/companies': typeof AppCompaniesRoute
   '/dashboard': typeof AppDashboardRoute
@@ -136,6 +152,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_app/account-access': typeof AppAccountAccessRoute
   '/_app/audit-log': typeof AppAuditLogRoute
   '/_app/companies': typeof AppCompaniesRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -154,6 +172,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/account-access'
     | '/audit-log'
     | '/companies'
     | '/dashboard'
@@ -170,6 +190,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
+    | '/account-access'
     | '/audit-log'
     | '/companies'
     | '/dashboard'
@@ -187,6 +209,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/auth'
+    | '/_app/account-access'
     | '/_app/audit-log'
     | '/_app/companies'
     | '/_app/dashboard'
@@ -205,10 +229,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -314,10 +346,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditLogRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/account-access': {
+      id: '/_app/account-access'
+      path: '/account-access'
+      fullPath: '/account-access'
+      preLoaderRoute: typeof AppAccountAccessRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAccountAccessRoute: typeof AppAccountAccessRoute
   AppAuditLogRoute: typeof AppAuditLogRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -334,6 +374,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAccountAccessRoute: AppAccountAccessRoute,
   AppAuditLogRoute: AppAuditLogRoute,
   AppCompaniesRoute: AppCompaniesRoute,
   AppDashboardRoute: AppDashboardRoute,
@@ -354,6 +395,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
