@@ -279,6 +279,75 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
     }
   }
 
+  async function doHuntAll() {
+    if (hunt.branches.length === 0) return;
+    setError(null);
+    setStopFlag(false);
+    setHunting(true);
+    const branches = hunt.branches;
+    const total = branches.length * iterationsPerBranch;
+    setHuntProgress({ done: 0, total });
+    let done = 0;
+    try {
+      for (let i = 0; i < iterationsPerBranch; i++) {
+        if (stopFlag) break;
+        await Promise.all(
+          branches.map(async (branch) => {
+            if (stopFlag) return;
+            // Read latest hunt state via functional update trick
+            let historySnapshot: { domain: string; available: boolean | null; price: number | null }[] = [];
+            let iterSnapshot = 0;
+            update((h) => {
+              historySnapshot = h.results
+                .filter((r) => r.branchId === branch.id)
+                .map((r) => ({ domain: r.domain, available: r.available, price: r.price }));
+              iterSnapshot = h.iterByBranch[branch.id] ?? 0;
+              return {};
+            });
+            try {
+              const res = await run({
+                data: {
+                  prompt: hunt.prompt,
+                  iteration: iterSnapshot + 1,
+                  history: historySnapshot,
+                  tlds: hunt.selectedTlds,
+                  batchSize: huntBatchSize,
+                  branchName: branch.name,
+                  branchKeywords: branch.keywords,
+                  branchDescription: branch.description,
+                  inspiration: hunt.inspiration || undefined,
+                  maxLength: hunt.maxChars > 0 ? hunt.maxChars : undefined,
+                },
+              });
+              update((h) => ({
+                results: [
+                  ...h.results,
+                  ...res.results.map((r) => ({
+                    branchId: branch.id,
+                    domain: r.domain,
+                    available: r.available,
+                    price: r.price,
+                    error: r.error,
+                  })),
+                ],
+                iterByBranch: { ...h.iterByBranch, [branch.id]: (h.iterByBranch[branch.id] ?? 0) + 1 },
+              }));
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Iteration failed");
+            } finally {
+              done += 1;
+              setHuntProgress({ done, total });
+            }
+          }),
+        );
+      }
+    } finally {
+      setHunting(false);
+      setStopFlag(false);
+    }
+  }
+
+
   return (
     <div className="min-w-0 space-y-6">
       <div className="flex items-center justify-between">
