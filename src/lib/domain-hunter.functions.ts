@@ -130,38 +130,29 @@ Generate ${batchSize} NEW domain ideas that DO NOT appear in the history above. 
 }
 
 async function checkDomain(domain: string): Promise<DomainResult> {
-  const key = process.env.GODADDY_API_KEY;
-  const secret = process.env.GODADDY_API_SECRET;
-  if (!key || !secret) {
-    return { domain, available: null, price: null, error: "GoDaddy credentials missing" };
-  }
-
+  // RDAP is the free, keyless successor to WHOIS. 404 = available, 200 = registered.
+  // Works from Cloudflare Workers with no auth. rdap.org routes to the correct
+  // registry RDAP server per TLD.
   try {
-    const res = await fetch(
-      `https://api.godaddy.com/v1/domains/available?domain=${encodeURIComponent(domain)}&checkType=FAST`,
-      {
-        headers: {
-          Authorization: `sso-key ${key}:${secret}`,
-          Accept: "application/json",
-        },
-      }
-    );
-
-    if (!res.ok) {
-      const text = await res.text();
-      return {
-        domain,
-        available: null,
-        price: null,
-        error: `GoDaddy ${res.status}: ${text.slice(0, 120)}`,
-      };
+    const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+      headers: { Accept: "application/rdap+json" },
+      redirect: "follow",
+    });
+    if (res.status === 404) {
+      return { domain, available: true, price: null, currency: "USD" };
     }
-    const data = await res.json();
+    if (res.status === 200) {
+      return { domain, available: false, price: null, currency: "USD" };
+    }
+    if (res.status === 429) {
+      return { domain, available: null, price: null, error: "Rate limited by RDAP" };
+    }
+    // Some TLDs (rare) may not be covered by rdap.org — treat as unknown rather than lying.
     return {
       domain,
-      available: Boolean(data.available),
-      price: typeof data.price === "number" ? data.price / 1_000_000 : null,
-      currency: data.currency ?? "USD",
+      available: null,
+      price: null,
+      error: `RDAP ${res.status}`,
     };
   } catch (e) {
     return {
