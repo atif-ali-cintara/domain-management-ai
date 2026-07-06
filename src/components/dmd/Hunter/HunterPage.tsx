@@ -863,12 +863,22 @@ function BranchCard({
                 <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                   <span>{r.price != null ? `$${r.price.toFixed(2)}` : annualEst != null ? `~$${annualEst}` : "—"}</span>
                   <a
-                    href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(r.domain)}`}
+                    href={`https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(r.domain)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 hover:text-foreground"
+                    title="Register on Namecheap"
                   >
-                    register <ExternalLink className="h-3 w-3" />
+                    Namecheap <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <a
+                    href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(r.domain)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 opacity-60 hover:opacity-100 hover:text-foreground"
+                    title="Compare on GoDaddy"
+                  >
+                    GoDaddy <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
               </li>
