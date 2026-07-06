@@ -486,6 +486,61 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
 
       {hunt.branches.length > 0 && (
         <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div>
+              <h2 className="text-base font-semibold">Hunt across all branches</h2>
+              <p className="mt-0.5 text-[13px] text-muted-foreground">
+                Runs iterations in parallel across every branch. Only on-budget, on-brief hits populate the list on the right.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-xs text-muted-foreground">
+                Iterations / branch
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={iterationsPerBranch}
+                  onChange={(e) => setIterationsPerBranch(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                  disabled={hunting}
+                  className="ml-1 w-16 rounded-md border border-border bg-background px-2 py-1 text-xs"
+                />
+              </label>
+              <label className="text-xs text-muted-foreground">
+                Batch
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={huntBatchSize}
+                  onChange={(e) => setHuntBatchSize(Math.max(1, Math.min(20, parseInt(e.target.value) || 10)))}
+                  disabled={hunting}
+                  className="ml-1 w-14 rounded-md border border-border bg-background px-2 py-1 text-xs"
+                />
+              </label>
+              {hunting ? (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    {huntProgress.done}/{huntProgress.total}
+                  </span>
+                  <button
+                    onClick={() => setStopFlag(true)}
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" /> Stop
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={doHuntAll}
+                  disabled={hunt.selectedTlds.length === 0}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  <Play className="h-4 w-4" /> Start hunt
+                </button>
+              )}
+            </div>
+          </div>
           {hunt.branches.map((b) => (
             <BranchCard key={b.id} hunt={hunt} branch={b} update={update} allTlds={allTlds} />
           ))}
