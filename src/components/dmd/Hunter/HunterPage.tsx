@@ -239,7 +239,13 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
   const [renaming, setRenaming] = useState(false);
   const [mapping, setMapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hunting, setHunting] = useState(false);
+  const [stopFlag, setStopFlag] = useState(false);
+  const [iterationsPerBranch, setIterationsPerBranch] = useState(3);
+  const [huntBatchSize, setHuntBatchSize] = useState(10);
+  const [huntProgress, setHuntProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const map = useServerFn(mapBranches);
+  const run = useServerFn(runIteration);
 
   const allTlds = useMemo(() => {
     const out = new Map<string, TldDef>();
@@ -272,6 +278,75 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
       setMapping(false);
     }
   }
+
+  async function doHuntAll() {
+    if (hunt.branches.length === 0) return;
+    setError(null);
+    setStopFlag(false);
+    setHunting(true);
+    const branches = hunt.branches;
+    const total = branches.length * iterationsPerBranch;
+    setHuntProgress({ done: 0, total });
+    let done = 0;
+    try {
+      for (let i = 0; i < iterationsPerBranch; i++) {
+        if (stopFlag) break;
+        await Promise.all(
+          branches.map(async (branch) => {
+            if (stopFlag) return;
+            // Read latest hunt state via functional update trick
+            let historySnapshot: { domain: string; available: boolean | null; price: number | null }[] = [];
+            let iterSnapshot = 0;
+            update((h) => {
+              historySnapshot = h.results
+                .filter((r) => r.branchId === branch.id)
+                .map((r) => ({ domain: r.domain, available: r.available, price: r.price }));
+              iterSnapshot = h.iterByBranch[branch.id] ?? 0;
+              return {};
+            });
+            try {
+              const res = await run({
+                data: {
+                  prompt: hunt.prompt,
+                  iteration: iterSnapshot + 1,
+                  history: historySnapshot,
+                  tlds: hunt.selectedTlds,
+                  batchSize: huntBatchSize,
+                  branchName: branch.name,
+                  branchKeywords: branch.keywords,
+                  branchDescription: branch.description,
+                  inspiration: hunt.inspiration || undefined,
+                  maxLength: hunt.maxChars > 0 ? hunt.maxChars : undefined,
+                },
+              });
+              update((h) => ({
+                results: [
+                  ...h.results,
+                  ...res.results.map((r) => ({
+                    branchId: branch.id,
+                    domain: r.domain,
+                    available: r.available,
+                    price: r.price,
+                    error: r.error,
+                  })),
+                ],
+                iterByBranch: { ...h.iterByBranch, [branch.id]: (h.iterByBranch[branch.id] ?? 0) + 1 },
+              }));
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Iteration failed");
+            } finally {
+              done += 1;
+              setHuntProgress({ done, total });
+            }
+          }),
+        );
+      }
+    } finally {
+      setHunting(false);
+      setStopFlag(false);
+    }
+  }
+
 
   return (
     <div className="min-w-0 space-y-6">
@@ -411,6 +486,61 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
 
       {hunt.branches.length > 0 && (
         <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div>
+              <h2 className="text-base font-semibold">Hunt across all branches</h2>
+              <p className="mt-0.5 text-[13px] text-muted-foreground">
+                Runs iterations in parallel across every branch. Only on-budget, on-brief hits populate the list on the right.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-xs text-muted-foreground">
+                Iterations / branch
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={iterationsPerBranch}
+                  onChange={(e) => setIterationsPerBranch(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                  disabled={hunting}
+                  className="ml-1 w-16 rounded-md border border-border bg-background px-2 py-1 text-xs"
+                />
+              </label>
+              <label className="text-xs text-muted-foreground">
+                Batch
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={huntBatchSize}
+                  onChange={(e) => setHuntBatchSize(Math.max(1, Math.min(20, parseInt(e.target.value) || 10)))}
+                  disabled={hunting}
+                  className="ml-1 w-14 rounded-md border border-border bg-background px-2 py-1 text-xs"
+                />
+              </label>
+              {hunting ? (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    {huntProgress.done}/{huntProgress.total}
+                  </span>
+                  <button
+                    onClick={() => setStopFlag(true)}
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" /> Stop
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={doHuntAll}
+                  disabled={hunt.selectedTlds.length === 0}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  <Play className="h-4 w-4" /> Start hunt
+                </button>
+              )}
+            </div>
+          </div>
           {hunt.branches.map((b) => (
             <BranchCard key={b.id} hunt={hunt} branch={b} update={update} allTlds={allTlds} />
           ))}
@@ -733,12 +863,22 @@ function BranchCard({
                 <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                   <span>{r.price != null ? `$${r.price.toFixed(2)}` : annualEst != null ? `~$${annualEst}` : "—"}</span>
                   <a
-                    href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(r.domain)}`}
+                    href={`https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(r.domain)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 hover:text-foreground"
+                    title="Register on Namecheap"
                   >
-                    register <ExternalLink className="h-3 w-3" />
+                    Namecheap <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <a
+                    href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(r.domain)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 opacity-60 hover:opacity-100 hover:text-foreground"
+                    title="Compare on GoDaddy"
+                  >
+                    GoDaddy <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
               </li>
@@ -753,14 +893,26 @@ function BranchCard({
 function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void }) {
   const [tab, setTab] = useState<"list" | "cart">("list");
 
+  const allTlds = useMemo(() => {
+    const out = new Map<string, TldDef>();
+    for (const g of DEFAULT_GROUPS) for (const t of g.tlds) out.set(t.tld, t);
+    for (const g of hunt.customGroups) for (const t of g.tlds) out.set(t.tld, t);
+    return out;
+  }, [hunt.customGroups]);
+
   const candidates = useMemo(() => {
     return hunt.results
       .filter((r) => r.available === true)
       .filter((r) => {
         if (hunt.maxChars > 0 && r.domain.length > hunt.maxChars) return false;
+        if (hunt.maxBudget > 0) {
+          const tld = "." + r.domain.split(".").slice(1).join(".");
+          const est = r.price ?? allTlds.get(tld)?.avg ?? null;
+          if (est != null && est > hunt.maxBudget) return false;
+        }
         return true;
       });
-  }, [hunt.results, hunt.maxChars]);
+  }, [hunt.results, hunt.maxChars, hunt.maxBudget, allTlds]);
 
   const byBranch = useMemo(() => {
     const out: Record<string, Result[]> = {};
@@ -866,12 +1018,12 @@ function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | (
                   Clear
                 </button>
                 <a
-                  href={`https://www.godaddy.com/domainsearch/bulk?domainsToCheck=${encodeURIComponent(hunt.cart.join("\n"))}`}
+                  href={`https://www.namecheap.com/domains/registration/results/?type=beast&domain-list=${encodeURIComponent(hunt.cart.join("\n"))}`}
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 rounded-md bg-primary px-2 py-1.5 text-center text-xs font-medium text-primary-foreground"
                 >
-                  Register all
+                  Register on Namecheap
                 </a>
               </div>
             </div>

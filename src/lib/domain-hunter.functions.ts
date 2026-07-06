@@ -90,7 +90,7 @@ async function generateIdeas(
   const available = history.filter((h) => h.available === true).map((h) => h.domain);
   const taken = history.filter((h) => h.available === false).map((h) => h.domain);
 
-  const sys = `You are an expert domain-name brainstormer. Generate creative, short, memorable, brandable domain names. Reply with ONLY a JSON object like {"domains":["foo.com","bar.io"]}. Lowercase. Include TLD.`;
+  const sys = `You are an expert domain-name brainstormer. Generate creative, short, memorable, brandable domain names that STRICTLY match the user's brief. Every idea MUST be clearly and directly relevant to the brief's industry, audience, and intent — reject any name that could apply to an unrelated business. Reply with ONLY a JSON object like {"domains":["foo.com","bar.io"]}. Lowercase. Include TLD.`;
 
   const branchBlock = branch
     ? `\nSEMANTIC BRANCH: ${branch.name}\nBranch angle: ${branch.description ?? ""}\nBranch keywords/seeds: ${(branch.keywords ?? []).join(", ")}\nAll ideas MUST stay tightly within this branch's theme and feel.\n`
@@ -105,7 +105,9 @@ TLDs to consider: ${tlds.join(", ")}
 Already tried & AVAILABLE (vary similarly): ${available.slice(-20).join(", ") || "none"}
 Already tried & TAKEN (avoid these and very-similar): ${taken.slice(-50).join(", ") || "none"}
 
-Generate ${batchSize} NEW domain ideas that DO NOT appear in the history above. Be more creative each iteration: invented words, compound words, metaphors, foreign-language roots, intentional misspellings. Keep names 4-14 chars before TLD. Return JSON only.`;
+RELEVANCE IS MANDATORY: every domain must instantly read as belonging to the brief above. Do not produce generic tech/startup names that could sell any product — they must evoke the specific industry, audience, or value described in the brief${branch ? " AND the semantic branch" : ""}. If a name isn't obviously on-brief, discard it and generate another.
+
+Generate ${batchSize} NEW domain ideas that DO NOT appear in the history above. Be creative: invented words, compound words, metaphors, foreign-language roots, intentional misspellings — but stay ON-BRIEF. Keep names 4-14 chars before TLD. Return JSON only.`;
 
   const parsed = await deepseekJSON(sys, user, 1.2);
   let arr: unknown;
