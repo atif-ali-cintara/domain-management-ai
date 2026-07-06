@@ -893,14 +893,26 @@ function BranchCard({
 function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void }) {
   const [tab, setTab] = useState<"list" | "cart">("list");
 
+  const allTlds = useMemo(() => {
+    const out = new Map<string, TldDef>();
+    for (const g of DEFAULT_GROUPS) for (const t of g.tlds) out.set(t.tld, t);
+    for (const g of hunt.customGroups) for (const t of g.tlds) out.set(t.tld, t);
+    return out;
+  }, [hunt.customGroups]);
+
   const candidates = useMemo(() => {
     return hunt.results
       .filter((r) => r.available === true)
       .filter((r) => {
         if (hunt.maxChars > 0 && r.domain.length > hunt.maxChars) return false;
+        if (hunt.maxBudget > 0) {
+          const tld = "." + r.domain.split(".").slice(1).join(".");
+          const est = r.price ?? allTlds.get(tld)?.avg ?? null;
+          if (est != null && est > hunt.maxBudget) return false;
+        }
         return true;
       });
-  }, [hunt.results, hunt.maxChars]);
+  }, [hunt.results, hunt.maxChars, hunt.maxBudget, allTlds]);
 
   const byBranch = useMemo(() => {
     const out: Record<string, Result[]> = {};
