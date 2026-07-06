@@ -239,7 +239,13 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
   const [renaming, setRenaming] = useState(false);
   const [mapping, setMapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hunting, setHunting] = useState(false);
+  const [stopFlag, setStopFlag] = useState(false);
+  const [iterationsPerBranch, setIterationsPerBranch] = useState(3);
+  const [huntBatchSize, setHuntBatchSize] = useState(10);
+  const [huntProgress, setHuntProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const map = useServerFn(mapBranches);
+  const run = useServerFn(runIteration);
 
   const allTlds = useMemo(() => {
     const out = new Map<string, TldDef>();
