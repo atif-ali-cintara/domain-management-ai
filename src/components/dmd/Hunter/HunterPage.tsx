@@ -1018,12 +1018,12 @@ function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | (
                   Clear
                 </button>
                 <a
-                  href={`https://www.godaddy.com/domainsearch/bulk?domainsToCheck=${encodeURIComponent(hunt.cart.join("\n"))}`}
+                  href={`https://www.namecheap.com/domains/registration/results/?type=beast&domain-list=${encodeURIComponent(hunt.cart.join("\n"))}`}
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 rounded-md bg-primary px-2 py-1.5 text-center text-xs font-medium text-primary-foreground"
                 >
-                  Register all
+                  Register on Namecheap
                 </a>
               </div>
             </div>
