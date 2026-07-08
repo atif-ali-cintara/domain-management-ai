@@ -582,6 +582,8 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
           ))}
         </section>
       )}
+
+      <FeedbackSection hunt={hunt} update={update} />
     </div>
   );
 }
