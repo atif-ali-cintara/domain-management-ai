@@ -742,7 +742,32 @@ function BranchCard({
   const [running, setRunning] = useState(false);
   const [batchSize, setBatchSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
+  const [rechecking, setRechecking] = useState<Set<string>>(new Set());
   const run = useServerFn(runIteration);
+  const recheck = useServerFn(recheckDomain);
+
+  async function doRecheck(domain: string) {
+    setRechecking((s) => new Set(s).add(domain));
+    try {
+      const { result } = await recheck({ data: { domain } });
+      update((h) => ({
+        results: h.results.map((r) =>
+          r.branchId === branch.id && r.domain === domain
+            ? { ...r, available: result.available, price: result.price, error: result.error ?? null }
+            : r
+        ),
+      }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Recheck failed");
+    } finally {
+      setRechecking((s) => {
+        const next = new Set(s);
+        next.delete(domain);
+        return next;
+      });
+    }
+  }
+
 
   const branchResults = hunt.results.filter((r) => r.branchId === branch.id);
   const availableCount = branchResults.filter((r) => r.available === true).length;
