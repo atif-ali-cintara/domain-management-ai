@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play } from "lucide-react";
-import { mapBranches, runIteration, suggestTlds, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
+import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
 
 type TldDef = { tld: string; tier: 1 | 2 | 3 | 4; avg: number };
 type TldGroup = { name: string; tlds: TldDef[] };
