@@ -297,11 +297,12 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
   }
 
   async function doHuntAll() {
-    if (hunt.branches.length === 0) return;
+    const selectedSet = new Set(hunt.selectedBranchIds);
+    const branches = hunt.branches.filter((b) => selectedSet.has(b.id));
+    if (branches.length === 0) return;
     setError(null);
     setStopFlag(false);
     setHunting(true);
-    const branches = hunt.branches;
     const total = branches.length * iterationsPerBranch;
     setHuntProgress({ done: 0, total });
     let done = 0;
