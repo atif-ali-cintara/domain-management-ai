@@ -90,6 +90,13 @@ type Result = {
   error?: string | null;
 };
 
+type FeedbackEntry = {
+  id: string;
+  text: string;
+  rating: "up" | "down" | null;
+  createdAt: number;
+};
+
 type Hunt = {
   id: string;
   name: string;
@@ -100,10 +107,12 @@ type Hunt = {
   maxBudget: number;
   maxChars: number;
   branches: Branch[];
+  selectedBranchIds: string[];
   results: Result[];
   cart: string[];
   iterByBranch: Record<string, number>;
   customGroups: TldGroup[];
+  feedback: FeedbackEntry[];
 };
 
 const STORAGE = "dmd.hunts.v1";
@@ -119,10 +128,12 @@ function newHunt(name = "Hunt 1"): Hunt {
     maxBudget: 50,
     maxChars: 0,
     branches: [],
+    selectedBranchIds: [],
     results: [],
     cart: [],
     iterByBranch: {},
     customGroups: [],
+    feedback: [],
   };
 }
 
