@@ -853,7 +853,20 @@ function BranchCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold">{branch.name}</h3>
+            <label className="flex items-center gap-2 cursor-pointer" title="Include this branch when starting a hunt">
+              <input
+                type="checkbox"
+                checked={hunt.selectedBranchIds.includes(branch.id)}
+                onChange={(e) =>
+                  update((h) => ({
+                    selectedBranchIds: e.target.checked
+                      ? Array.from(new Set([...h.selectedBranchIds, branch.id]))
+                      : h.selectedBranchIds.filter((id) => id !== branch.id),
+                  }))
+                }
+              />
+              <h3 className="text-base font-semibold">{branch.name}</h3>
+            </label>
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
               iter {iter} · {branchResults.length} tried · {availableCount} available
             </span>
