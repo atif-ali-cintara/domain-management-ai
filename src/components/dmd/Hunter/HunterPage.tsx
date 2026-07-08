@@ -506,10 +506,28 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
             <div>
-              <h2 className="text-base font-semibold">Hunt across all branches</h2>
+              <h2 className="text-base font-semibold">Hunt across selected branches</h2>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Runs iterations in parallel across every branch. Only on-budget, on-brief hits populate the list on the right.
+                Pick the branches that match your intent — only checked branches will be searched.{" "}
+                <span className="font-medium text-foreground">
+                  {hunt.selectedBranchIds.length} of {hunt.branches.length} selected
+                </span>
+                .
               </p>
+              <div className="mt-2 flex gap-3 text-xs">
+                <button
+                  onClick={() => update({ selectedBranchIds: hunt.branches.map((b) => b.id) })}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Select all
+                </button>
+                <button
+                  onClick={() => update({ selectedBranchIds: [] })}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Select none
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-xs text-muted-foreground">
