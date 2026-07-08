@@ -978,6 +978,7 @@ function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | (
                                   }
                                 />
                                 <span className="truncate">{r.domain}</span>
+                                <span className="shrink-0 text-[10px] text-muted-foreground">{r.domain.length}c</span>
                               </label>
                               <span className="shrink-0 text-muted-foreground">
                                 {r.price != null ? `$${r.price.toFixed(2)}` : ""}
