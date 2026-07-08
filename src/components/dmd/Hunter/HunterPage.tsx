@@ -569,7 +569,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
               ) : (
                 <button
                   onClick={doHuntAll}
-                  disabled={hunt.selectedTlds.length === 0}
+                  disabled={hunt.selectedTlds.length === 0 || hunt.selectedBranchIds.length === 0}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   <Play className="h-4 w-4" /> Start hunt
