@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play } from "lucide-react";
-import { mapBranches, runIteration, suggestTlds, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
+import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw } from "lucide-react";
+import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
 
 type TldDef = { tld: string; tier: 1 | 2 | 3 | 4; avg: number };
 type TldGroup = { name: string; tlds: TldDef[] };
@@ -742,7 +742,32 @@ function BranchCard({
   const [running, setRunning] = useState(false);
   const [batchSize, setBatchSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
+  const [rechecking, setRechecking] = useState<Set<string>>(new Set());
   const run = useServerFn(runIteration);
+  const recheck = useServerFn(recheckDomain);
+
+  async function doRecheck(domain: string) {
+    setRechecking((s) => new Set(s).add(domain));
+    try {
+      const { result } = await recheck({ data: { domain } });
+      update((h) => ({
+        results: h.results.map((r) =>
+          r.branchId === branch.id && r.domain === domain
+            ? { ...r, available: result.available, price: result.price, error: result.error ?? null }
+            : r
+        ),
+      }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Recheck failed");
+    } finally {
+      setRechecking((s) => {
+        const next = new Set(s);
+        next.delete(domain);
+        return next;
+      });
+    }
+  }
+
 
   const branchResults = hunt.results.filter((r) => r.branchId === branch.id);
   const availableCount = branchResults.filter((r) => r.available === true).length;
@@ -833,15 +858,17 @@ function BranchCard({
 
       {branchResults.length > 0 && (
         <ul className="mt-4 divide-y divide-border">
-          {branchResults.filter((r) => r.available !== null).map((r) => {
+          {branchResults.map((r) => {
             const tld = "." + r.domain.split(".").slice(1).join(".");
             const def = allTlds.get(tld);
             const annualEst = def?.avg ?? null;
             const overBudget = annualEst != null && annualEst > hunt.maxBudget;
             const overChars = hunt.maxChars > 0 && r.domain.length > hunt.maxChars;
             const inCart = hunt.cart.includes(r.domain);
+            const isUnknown = r.available === null;
+            const isBusy = rechecking.has(r.domain);
             return (
-              <li key={r.domain + r.branchId} className="flex items-center justify-between gap-3 py-2 text-sm">
+              <li key={r.domain + r.branchId} className={`flex items-center justify-between gap-3 py-2 text-sm ${isUnknown ? "opacity-70" : ""}`}>
                 <div className="flex min-w-0 items-center gap-2">
                   <input
                     type="checkbox"
@@ -857,11 +884,30 @@ function BranchCard({
                   <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title="Character count (including TLD)">{r.domain.length} chars</span>
                   {r.available === true && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">available</span>}
                   {r.available === false && <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-600">taken</span>}
+                  {isUnknown && (
+                    <span
+                      className="rounded-full bg-slate-500/10 px-2 py-0.5 text-[11px] text-slate-500"
+                      title={r.error ?? "Availability lookup didn't return a definitive answer — click Recheck."}
+                    >
+                      unknown{r.error ? ` · ${r.error}` : ""}
+                    </span>
+                  )}
                   {overBudget && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">over budget</span>}
                   {overChars && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">too long</span>}
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                   <span>{r.price != null ? `$${r.price.toFixed(2)}` : annualEst != null ? `~$${annualEst}` : "—"}</span>
+                  {isUnknown && (
+                    <button
+                      onClick={() => doRecheck(r.domain)}
+                      disabled={isBusy}
+                      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[11px] hover:bg-muted disabled:opacity-50"
+                      title="Retry the availability lookup"
+                    >
+                      {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCw className="h-3 w-3" />}
+                      Recheck
+                    </button>
+                  )}
                   <a
                     href={`https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(r.domain)}`}
                     target="_blank"
@@ -886,6 +932,7 @@ function BranchCard({
           })}
         </ul>
       )}
+
     </div>
   );
 }

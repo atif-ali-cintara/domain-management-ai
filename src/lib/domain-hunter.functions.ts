@@ -90,7 +90,14 @@ async function generateIdeas(
   const available = history.filter((h) => h.available === true).map((h) => h.domain);
   const taken = history.filter((h) => h.available === false).map((h) => h.domain);
 
-  const sys = `You are an expert domain-name brainstormer. Generate creative, short, memorable, brandable domain names that STRICTLY match the user's brief. Every idea MUST be clearly and directly relevant to the brief's industry, audience, and intent — reject any name that could apply to an unrelated business. Reply with ONLY a JSON object like {"domains":["foo.com","bar.io"]}. Lowercase. Include TLD.`;
+  const sys = `You are an expert domain-name brainstormer. Generate creative, short, memorable, brandable domain names that STRICTLY match the user's brief. Every idea MUST be clearly and directly relevant to the brief's industry, audience, and intent — reject any name that could apply to an unrelated business. Reply with ONLY a JSON object like {"domains":["foo.com","bar.io"]}. Lowercase. Include TLD.
+
+CRITICAL CREATIVITY RULES (the obvious .com space is almost always taken — do NOT waste ideas on it):
+- Prefer HYBRID / INVENTED / COMPOUND stems: portmanteaus, invented brand words, Latin/Greek/French roots, playful suffixes (-ly, -ify, -ora, -ora, -vera, -eon, -ora, -ora, -ux, -io-style but as letters), and unexpected metaphors.
+- US state/metro codes in the brief (HI, CA, NY, CO, ME, MD, VA, FL, etc.) are PREFIX or SUFFIX HINTS ONLY — never treat them as TLDs and never output them as ".hi" / ".ca" / ".me" / ".co". Combine them into the stem (e.g. "cavantahomes", "flkeyoffer", "nycasadeed").
+- Avoid the most crowded exact patterns unless combined with an invented twist: bare "webuyhomes*", "*homes", "home*buyers", "cash*offer", "sell*fast", "we*pay*cash".
+- Names must feel trustworthy and corporate for a US home-buying company, but still be distinctive.`;
+
 
   const branchBlock = branch
     ? `\nSEMANTIC BRANCH: ${branch.name}\nBranch angle: ${branch.description ?? ""}\nBranch keywords/seeds: ${(branch.keywords ?? []).join(", ")}\nAll ideas MUST stay tightly within this branch's theme and feel.\n`
@@ -129,39 +136,63 @@ Generate ${batchSize} NEW domain ideas that DO NOT appear in the history above. 
   ).slice(0, batchSize);
 }
 
-async function checkDomain(domain: string): Promise<DomainResult> {
-  // RDAP is the free, keyless successor to WHOIS. 404 = available, 200 = registered.
-  // Works from Cloudflare Workers with no auth. rdap.org routes to the correct
-  // registry RDAP server per TLD.
+async function rdapOnce(domain: string): Promise<{ status: number } | { networkError: string }> {
   try {
     const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
       headers: { Accept: "application/rdap+json" },
       redirect: "follow",
     });
-    if (res.status === 404) {
-      return { domain, available: true, price: null, currency: "USD" };
-    }
-    if (res.status === 200) {
-      return { domain, available: false, price: null, currency: "USD" };
-    }
-    if (res.status === 429) {
-      return { domain, available: null, price: null, error: "Rate limited by RDAP" };
-    }
-    // Some TLDs (rare) may not be covered by rdap.org — treat as unknown rather than lying.
-    return {
-      domain,
-      available: null,
-      price: null,
-      error: `RDAP ${res.status}`,
-    };
+    return { status: res.status };
   } catch (e) {
-    return {
-      domain,
-      available: null,
-      price: null,
-      error: e instanceof Error ? e.message : "Network error",
-    };
+    return { networkError: e instanceof Error ? e.message : "Network error" };
   }
+}
+
+async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> {
+  // RDAP is the free, keyless successor to WHOIS. 404 = available, 200 = registered.
+  // Retry transient failures (429 / 5xx / network) with exponential backoff + jitter
+  // so a rate-limited request doesn't get silently reported as "Unknown".
+  let lastErr = "Unknown";
+  for (let i = 0; i < attempts; i++) {
+    const r = await rdapOnce(domain);
+    if ("networkError" in r) {
+      lastErr = r.networkError;
+    } else if (r.status === 404) {
+      return { domain, available: true, price: null, currency: "USD" };
+    } else if (r.status === 200) {
+      return { domain, available: false, price: null, currency: "USD" };
+    } else if (r.status === 429 || r.status >= 500) {
+      lastErr = `RDAP ${r.status}`;
+    } else {
+      // e.g. 400/403 — TLD not covered; retrying won't help.
+      return { domain, available: null, price: null, error: `RDAP ${r.status}` };
+    }
+    if (i < attempts - 1) {
+      const delay = 400 * Math.pow(2, i) + Math.floor(Math.random() * 250);
+      await new Promise((res) => setTimeout(res, delay));
+    }
+  }
+  return { domain, available: null, price: null, error: lastErr };
+}
+
+// Simple concurrency limiter — RDAP starts throwing 429 when we blast 10+ parallel
+// requests, so keep it at 4 in flight and it stays happy.
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const idx = cursor++;
+      if (idx >= items.length) return;
+      out[idx] = await fn(items[idx]);
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 export const runIteration = createServerFn({ method: "POST" })
@@ -182,9 +213,21 @@ export const runIteration = createServerFn({ method: "POST" })
     if (ideas.length === 0) {
       return { ideas, results: [] as DomainResult[] };
     }
-    const results = await Promise.all(ideas.map((d) => checkDomain(d)));
+    const results = await mapWithConcurrency(ideas, 4, (d) => checkDomain(d));
     return { ideas, results };
   });
+
+const RecheckInput = z.object({
+  domain: z.string().min(3).max(255).regex(/^[a-z0-9-]+\.[a-z.]+$/i),
+});
+
+export const recheckDomain = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => RecheckInput.parse(d))
+  .handler(async ({ data }) => {
+    const result = await checkDomain(data.domain.toLowerCase(), 4);
+    return { result };
+  });
+
 
 export const mapBranches = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => MapBranchesInput.parse(d))
