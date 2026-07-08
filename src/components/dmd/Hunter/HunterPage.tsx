@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw } from "lucide-react";
+import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
 import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
 
 type TldDef = { tld: string; tier: 1 | 2 | 3 | 4; avg: number };
@@ -90,6 +90,13 @@ type Result = {
   error?: string | null;
 };
 
+type FeedbackEntry = {
+  id: string;
+  text: string;
+  rating: "up" | "down" | null;
+  createdAt: number;
+};
+
 type Hunt = {
   id: string;
   name: string;
@@ -100,10 +107,12 @@ type Hunt = {
   maxBudget: number;
   maxChars: number;
   branches: Branch[];
+  selectedBranchIds: string[];
   results: Result[];
   cart: string[];
   iterByBranch: Record<string, number>;
   customGroups: TldGroup[];
+  feedback: FeedbackEntry[];
 };
 
 const STORAGE = "dmd.hunts.v1";
@@ -119,10 +128,12 @@ function newHunt(name = "Hunt 1"): Hunt {
     maxBudget: 50,
     maxChars: 0,
     branches: [],
+    selectedBranchIds: [],
     results: [],
     cart: [],
     iterByBranch: {},
     customGroups: [],
+    feedback: [],
   };
 }
 
@@ -144,8 +155,14 @@ export function HunterPage() {
       if (raw) {
         const parsed = JSON.parse(raw) as { hunts: Hunt[]; activeId: string };
         if (parsed?.hunts?.length) {
-          setHunts(parsed.hunts);
-          setActiveId(parsed.activeId || parsed.hunts[0].id);
+          // Backfill fields added after this hunt was persisted.
+          const normalized = parsed.hunts.map((h) => ({
+            ...h,
+            selectedBranchIds: h.selectedBranchIds ?? (h.branches?.map((b) => b.id) ?? []),
+            feedback: h.feedback ?? [],
+          }));
+          setHunts(normalized);
+          setActiveId(parsed.activeId || normalized[0].id);
           setHydrated(true);
           return;
         }
@@ -271,7 +288,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
       const res = await map({
         data: { prompt: hunt.prompt, count: hunt.branchesToMap, inspiration: hunt.inspiration || undefined },
       });
-      update({ branches: res.branches, results: [], iterByBranch: {} });
+      update({ branches: res.branches, selectedBranchIds: res.branches.map((b) => b.id), results: [], iterByBranch: {} });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to map branches");
     } finally {
@@ -280,11 +297,12 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
   }
 
   async function doHuntAll() {
-    if (hunt.branches.length === 0) return;
+    const selectedSet = new Set(hunt.selectedBranchIds);
+    const branches = hunt.branches.filter((b) => selectedSet.has(b.id));
+    if (branches.length === 0) return;
     setError(null);
     setStopFlag(false);
     setHunting(true);
-    const branches = hunt.branches;
     const total = branches.length * iterationsPerBranch;
     setHuntProgress({ done: 0, total });
     let done = 0;
@@ -488,10 +506,28 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
             <div>
-              <h2 className="text-base font-semibold">Hunt across all branches</h2>
+              <h2 className="text-base font-semibold">Hunt across selected branches</h2>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Runs iterations in parallel across every branch. Only on-budget, on-brief hits populate the list on the right.
+                Pick the branches that match your intent — only checked branches will be searched.{" "}
+                <span className="font-medium text-foreground">
+                  {hunt.selectedBranchIds.length} of {hunt.branches.length} selected
+                </span>
+                .
               </p>
+              <div className="mt-2 flex gap-3 text-xs">
+                <button
+                  onClick={() => update({ selectedBranchIds: hunt.branches.map((b) => b.id) })}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Select all
+                </button>
+                <button
+                  onClick={() => update({ selectedBranchIds: [] })}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Select none
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-xs text-muted-foreground">
@@ -533,7 +569,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
               ) : (
                 <button
                   onClick={doHuntAll}
-                  disabled={hunt.selectedTlds.length === 0}
+                  disabled={hunt.selectedTlds.length === 0 || hunt.selectedBranchIds.length === 0}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   <Play className="h-4 w-4" /> Start hunt
@@ -546,7 +582,123 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
           ))}
         </section>
       )}
+
+      <FeedbackSection hunt={hunt} update={update} />
     </div>
+  );
+}
+
+function FeedbackSection({
+  hunt,
+  update,
+}: {
+  hunt: Hunt;
+  update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void;
+}) {
+  const [text, setText] = useState("");
+  const [rating, setRating] = useState<"up" | "down" | null>(null);
+  const entries = hunt.feedback ?? [];
+
+  function submit() {
+    const trimmed = text.trim();
+    if (!trimmed && !rating) return;
+    const entry: FeedbackEntry = {
+      id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      text: trimmed,
+      rating,
+      createdAt: Date.now(),
+    };
+    update((h) => ({ feedback: [entry, ...(h.feedback ?? [])] }));
+    setText("");
+    setRating(null);
+  }
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-base font-semibold">Feedback</h2>
+        <span className="text-xs text-muted-foreground">
+          Tell us if the extracted domains helped with what you were looking for.
+        </span>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        placeholder="e.g. Great geo-centric names in the Local Trust branch, but the Premium branch felt off-brief."
+        className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setRating(rating === "up" ? null : "up")}
+            className={[
+              "inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition",
+              rating === "up"
+                ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
+                : "border-border bg-background text-muted-foreground hover:bg-muted",
+            ].join(" ")}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" /> Helpful
+          </button>
+          <button
+            type="button"
+            onClick={() => setRating(rating === "down" ? null : "down")}
+            className={[
+              "inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition",
+              rating === "down"
+                ? "border-rose-500 bg-rose-500/10 text-rose-600"
+                : "border-border bg-background text-muted-foreground hover:bg-muted",
+            ].join(" ")}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" /> Off-brief
+          </button>
+        </div>
+        <button
+          onClick={submit}
+          disabled={!text.trim() && !rating}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          Submit feedback
+        </button>
+      </div>
+
+      {entries.length > 0 && (
+        <ul className="mt-5 space-y-2 border-t border-border pt-4">
+          {entries.map((f) => (
+            <li key={f.id} className="rounded-md border border-border bg-background p-3">
+              <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  {f.rating === "up" && (
+                    <span className="inline-flex items-center gap-1 text-emerald-600">
+                      <ThumbsUp className="h-3 w-3" /> Helpful
+                    </span>
+                  )}
+                  {f.rating === "down" && (
+                    <span className="inline-flex items-center gap-1 text-rose-600">
+                      <ThumbsDown className="h-3 w-3" /> Off-brief
+                    </span>
+                  )}
+                  <span>{new Date(f.createdAt).toLocaleString()}</span>
+                </div>
+                <button
+                  onClick={() =>
+                    update((h) => ({ feedback: (h.feedback ?? []).filter((x) => x.id !== f.id) }))
+                  }
+                  className="text-muted-foreground/70 hover:text-rose-600"
+                  title="Delete feedback"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+              {f.text && <p className="whitespace-pre-wrap text-sm text-foreground">{f.text}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -817,7 +969,20 @@ function BranchCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold">{branch.name}</h3>
+            <label className="flex items-center gap-2 cursor-pointer" title="Include this branch when starting a hunt">
+              <input
+                type="checkbox"
+                checked={hunt.selectedBranchIds.includes(branch.id)}
+                onChange={(e) =>
+                  update((h) => ({
+                    selectedBranchIds: e.target.checked
+                      ? Array.from(new Set([...h.selectedBranchIds, branch.id]))
+                      : h.selectedBranchIds.filter((id) => id !== branch.id),
+                  }))
+                }
+              />
+              <h3 className="text-base font-semibold">{branch.name}</h3>
+            </label>
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
               iter {iter} · {branchResults.length} tried · {availableCount} available
             </span>
