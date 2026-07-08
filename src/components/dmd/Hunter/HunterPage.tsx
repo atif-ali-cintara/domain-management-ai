@@ -833,7 +833,7 @@ function BranchCard({
 
       {branchResults.length > 0 && (
         <ul className="mt-4 divide-y divide-border">
-          {branchResults.map((r) => {
+          {branchResults.filter((r) => r.available !== null).map((r) => {
             const tld = "." + r.domain.split(".").slice(1).join(".");
             const def = allTlds.get(tld);
             const annualEst = def?.avg ?? null;
@@ -854,9 +854,9 @@ function BranchCard({
                     }
                   />
                   <span className="truncate font-medium">{r.domain}</span>
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title="Character count (including TLD)">{r.domain.length} chars</span>
                   {r.available === true && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">available</span>}
                   {r.available === false && <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-600">taken</span>}
-                  {r.available === null && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">unknown</span>}
                   {overBudget && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">over budget</span>}
                   {overChars && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">too long</span>}
                 </div>
