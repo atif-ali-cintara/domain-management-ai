@@ -155,8 +155,14 @@ export function HunterPage() {
       if (raw) {
         const parsed = JSON.parse(raw) as { hunts: Hunt[]; activeId: string };
         if (parsed?.hunts?.length) {
-          setHunts(parsed.hunts);
-          setActiveId(parsed.activeId || parsed.hunts[0].id);
+          // Backfill fields added after this hunt was persisted.
+          const normalized = parsed.hunts.map((h) => ({
+            ...h,
+            selectedBranchIds: h.selectedBranchIds ?? (h.branches?.map((b) => b.id) ?? []),
+            feedback: h.feedback ?? [],
+          }));
+          setHunts(normalized);
+          setActiveId(parsed.activeId || normalized[0].id);
           setHydrated(true);
           return;
         }
