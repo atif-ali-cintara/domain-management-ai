@@ -588,6 +588,120 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
   );
 }
 
+function FeedbackSection({
+  hunt,
+  update,
+}: {
+  hunt: Hunt;
+  update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void;
+}) {
+  const [text, setText] = useState("");
+  const [rating, setRating] = useState<"up" | "down" | null>(null);
+  const entries = hunt.feedback ?? [];
+
+  function submit() {
+    const trimmed = text.trim();
+    if (!trimmed && !rating) return;
+    const entry: FeedbackEntry = {
+      id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      text: trimmed,
+      rating,
+      createdAt: Date.now(),
+    };
+    update((h) => ({ feedback: [entry, ...(h.feedback ?? [])] }));
+    setText("");
+    setRating(null);
+  }
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-base font-semibold">Feedback</h2>
+        <span className="text-xs text-muted-foreground">
+          Tell us if the extracted domains helped with what you were looking for.
+        </span>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        placeholder="e.g. Great geo-centric names in the Local Trust branch, but the Premium branch felt off-brief."
+        className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setRating(rating === "up" ? null : "up")}
+            className={[
+              "inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition",
+              rating === "up"
+                ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
+                : "border-border bg-background text-muted-foreground hover:bg-muted",
+            ].join(" ")}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" /> Helpful
+          </button>
+          <button
+            type="button"
+            onClick={() => setRating(rating === "down" ? null : "down")}
+            className={[
+              "inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition",
+              rating === "down"
+                ? "border-rose-500 bg-rose-500/10 text-rose-600"
+                : "border-border bg-background text-muted-foreground hover:bg-muted",
+            ].join(" ")}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" /> Off-brief
+          </button>
+        </div>
+        <button
+          onClick={submit}
+          disabled={!text.trim() && !rating}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          Submit feedback
+        </button>
+      </div>
+
+      {entries.length > 0 && (
+        <ul className="mt-5 space-y-2 border-t border-border pt-4">
+          {entries.map((f) => (
+            <li key={f.id} className="rounded-md border border-border bg-background p-3">
+              <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  {f.rating === "up" && (
+                    <span className="inline-flex items-center gap-1 text-emerald-600">
+                      <ThumbsUp className="h-3 w-3" /> Helpful
+                    </span>
+                  )}
+                  {f.rating === "down" && (
+                    <span className="inline-flex items-center gap-1 text-rose-600">
+                      <ThumbsDown className="h-3 w-3" /> Off-brief
+                    </span>
+                  )}
+                  <span>{new Date(f.createdAt).toLocaleString()}</span>
+                </div>
+                <button
+                  onClick={() =>
+                    update((h) => ({ feedback: (h.feedback ?? []).filter((x) => x.id !== f.id) }))
+                  }
+                  className="text-muted-foreground/70 hover:text-rose-600"
+                  title="Delete feedback"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+              {f.text && <p className="whitespace-pre-wrap text-sm text-foreground">{f.text}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function TldPicker({
   allTlds,
   selected,
