@@ -90,7 +90,14 @@ async function generateIdeas(
   const available = history.filter((h) => h.available === true).map((h) => h.domain);
   const taken = history.filter((h) => h.available === false).map((h) => h.domain);
 
-  const sys = `You are an expert domain-name brainstormer. Generate creative, short, memorable, brandable domain names that STRICTLY match the user's brief. Every idea MUST be clearly and directly relevant to the brief's industry, audience, and intent — reject any name that could apply to an unrelated business. Reply with ONLY a JSON object like {"domains":["foo.com","bar.io"]}. Lowercase. Include TLD.`;
+  const sys = `You are an expert domain-name brainstormer. Generate creative, short, memorable, brandable domain names that STRICTLY match the user's brief. Every idea MUST be clearly and directly relevant to the brief's industry, audience, and intent — reject any name that could apply to an unrelated business. Reply with ONLY a JSON object like {"domains":["foo.com","bar.io"]}. Lowercase. Include TLD.
+
+CRITICAL CREATIVITY RULES (the obvious .com space is almost always taken — do NOT waste ideas on it):
+- Prefer HYBRID / INVENTED / COMPOUND stems: portmanteaus, invented brand words, Latin/Greek/French roots, playful suffixes (-ly, -ify, -ora, -ora, -vera, -eon, -ora, -ora, -ux, -io-style but as letters), and unexpected metaphors.
+- US state/metro codes in the brief (HI, CA, NY, CO, ME, MD, VA, FL, etc.) are PREFIX or SUFFIX HINTS ONLY — never treat them as TLDs and never output them as ".hi" / ".ca" / ".me" / ".co". Combine them into the stem (e.g. "cavantahomes", "flkeyoffer", "nycasadeed").
+- Avoid the most crowded exact patterns unless combined with an invented twist: bare "webuyhomes*", "*homes", "home*buyers", "cash*offer", "sell*fast", "we*pay*cash".
+- Names must feel trustworthy and corporate for a US home-buying company, but still be distinctive.`;
+
 
   const branchBlock = branch
     ? `\nSEMANTIC BRANCH: ${branch.name}\nBranch angle: ${branch.description ?? ""}\nBranch keywords/seeds: ${(branch.keywords ?? []).join(", ")}\nAll ideas MUST stay tightly within this branch's theme and feel.\n`
