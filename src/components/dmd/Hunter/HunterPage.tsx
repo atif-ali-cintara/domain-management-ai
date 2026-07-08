@@ -288,7 +288,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
       const res = await map({
         data: { prompt: hunt.prompt, count: hunt.branchesToMap, inspiration: hunt.inspiration || undefined },
       });
-      update({ branches: res.branches, results: [], iterByBranch: {} });
+      update({ branches: res.branches, selectedBranchIds: res.branches.map((b) => b.id), results: [], iterByBranch: {} });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to map branches");
     } finally {
