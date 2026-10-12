@@ -23,9 +23,11 @@ import { Route as AppIdentitiesRouteImport } from './routes/_app.identities'
 import { Route as AppHunterRouteImport } from './routes/_app.hunter'
 import { Route as AppDomainsRouteImport } from './routes/_app.domains'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolidated-email'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
 import { Route as AppAccountAccessRouteImport } from './routes/_app.account-access'
+import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -96,6 +98,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppConsolidatedEmailRoute = AppConsolidatedEmailRouteImport.update({
+  id: '/consolidated-email',
+  path: '/consolidated-email',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCompaniesRoute = AppCompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
@@ -111,6 +118,11 @@ const AppAccountAccessRoute = AppAccountAccessRouteImport.update({
   path: '/account-access',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
+  id: '/api/public/google/callback',
+  path: '/api/public/google/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -118,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/account-access': typeof AppAccountAccessRoute
   '/audit-log': typeof AppAuditLogRoute
   '/companies': typeof AppCompaniesRoute
+  '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
@@ -129,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/usage': typeof AppUsageRoute
+  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -136,6 +150,7 @@ export interface FileRoutesByTo {
   '/account-access': typeof AppAccountAccessRoute
   '/audit-log': typeof AppAuditLogRoute
   '/companies': typeof AppCompaniesRoute
+  '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
@@ -147,6 +162,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/usage': typeof AppUsageRoute
+  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -156,6 +172,7 @@ export interface FileRoutesById {
   '/_app/account-access': typeof AppAccountAccessRoute
   '/_app/audit-log': typeof AppAuditLogRoute
   '/_app/companies': typeof AppCompaniesRoute
+  '/_app/consolidated-email': typeof AppConsolidatedEmailRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/domains': typeof AppDomainsRoute
   '/_app/hunter': typeof AppHunterRoute
@@ -167,6 +184,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/usage': typeof AppUsageRoute
+  '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -176,6 +194,7 @@ export interface FileRouteTypes {
     | '/account-access'
     | '/audit-log'
     | '/companies'
+    | '/consolidated-email'
     | '/dashboard'
     | '/domains'
     | '/hunter'
@@ -187,6 +206,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/usage'
+    | '/api/public/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -194,6 +214,7 @@ export interface FileRouteTypes {
     | '/account-access'
     | '/audit-log'
     | '/companies'
+    | '/consolidated-email'
     | '/dashboard'
     | '/domains'
     | '/hunter'
@@ -205,6 +226,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/usage'
+    | '/api/public/google/callback'
   id:
     | '__root__'
     | '/'
@@ -213,6 +235,7 @@ export interface FileRouteTypes {
     | '/_app/account-access'
     | '/_app/audit-log'
     | '/_app/companies'
+    | '/_app/consolidated-email'
     | '/_app/dashboard'
     | '/_app/domains'
     | '/_app/hunter'
@@ -224,12 +247,14 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/tasks'
     | '/_app/usage'
+    | '/api/public/google/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/consolidated-email': {
+      id: '/_app/consolidated-email'
+      path: '/consolidated-email'
+      fullPath: '/consolidated-email'
+      preLoaderRoute: typeof AppConsolidatedEmailRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/companies': {
       id: '/_app/companies'
       path: '/companies'
@@ -353,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountAccessRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/google/callback': {
+      id: '/api/public/google/callback'
+      path: '/api/public/google/callback'
+      fullPath: '/api/public/google/callback'
+      preLoaderRoute: typeof ApiPublicGoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -360,6 +399,7 @@ interface AppRouteChildren {
   AppAccountAccessRoute: typeof AppAccountAccessRoute
   AppAuditLogRoute: typeof AppAuditLogRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
+  AppConsolidatedEmailRoute: typeof AppConsolidatedEmailRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDomainsRoute: typeof AppDomainsRoute
   AppHunterRoute: typeof AppHunterRoute
@@ -377,6 +417,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountAccessRoute: AppAccountAccessRoute,
   AppAuditLogRoute: AppAuditLogRoute,
   AppCompaniesRoute: AppCompaniesRoute,
+  AppConsolidatedEmailRoute: AppConsolidatedEmailRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDomainsRoute: AppDomainsRoute,
   AppHunterRoute: AppHunterRoute,
@@ -396,6 +437,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
