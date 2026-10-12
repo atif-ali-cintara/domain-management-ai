@@ -17,6 +17,7 @@ import {
   Sparkles,
   Lock,
   LogOut,
+  Mail,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { useEffect, useState } from "react";
@@ -39,6 +40,7 @@ const NAV: NavItem[] = [
   { to: "/import-export", label: "Import / Export", icon: Upload },
   { to: "/audit-log", label: "Audit Log", icon: ScrollText },
   { to: "/account-access", label: "Account Access", icon: Lock, superAdminOnly: true },
+  { to: "/consolidated-email", label: "Consolidated Email", icon: Mail, superAdminOnly: true },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
