@@ -35,6 +35,9 @@ type DomainResult = {
   price: number | null;
   currency?: string | null;
   error?: string | null;
+  source?: "namecheap" | "dns" | "registry";
+  note?: string;
+  likely?: boolean;
 };
 
 export type Branch = {
@@ -206,12 +209,7 @@ async function dnsCheck(domain: string): Promise<"taken" | "nxdomain" | "unknown
   }
 }
 
-async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> {
-  // Tier 1: DNS — live nameservers mean the domain is registered.
-  const dns = await dnsCheck(domain);
-  if (dns === "taken") return { domain, available: false, price: null, currency: "USD" };
-
-  // Tier 2: authoritative RDAP (direct registry for .com/.net, IANA bootstrap otherwise).
+async function rdapCheck(domain: string, attempts: number): Promise<DomainResult> {
   let base = await rdapBase(domain);
   let lastErr = "Unknown";
   for (let i = 0; i < attempts; i++) {
@@ -219,14 +217,13 @@ async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> 
     if ("networkError" in r) {
       lastErr = r.networkError;
     } else if (r.status === 404) {
-      return { domain, available: true, price: null, currency: "USD" };
+      return { domain, available: true, price: null, currency: "USD", source: "registry" };
     } else if (r.status === 200) {
-      return { domain, available: false, price: null, currency: "USD" };
+      return { domain, available: false, price: null, currency: "USD", source: "registry" };
     } else if (r.status === 429 || r.status >= 500) {
       lastErr = `RDAP ${r.status}`;
     } else {
       lastErr = `RDAP ${r.status}`;
-      // Registry refused us — fall back to rdap.org once.
       if (base !== "https://rdap.org/") base = "https://rdap.org/";
       else break;
     }
@@ -236,6 +233,85 @@ async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> 
     }
   }
   return { domain, available: null, price: null, error: lastErr };
+}
+
+// Fallback when Namecheap can't answer: DNS first, then registry.
+async function fallbackCheck(domain: string, attempts: number, note?: string): Promise<DomainResult> {
+  const dns = await dnsCheck(domain);
+  if (dns === "taken") return { domain, available: false, price: null, currency: "USD", source: "dns", note };
+  const r = await rdapCheck(domain, attempts);
+  if (r.available !== null) return { ...r, note };
+  if (dns === "nxdomain") return { domain, available: true, price: null, currency: "USD", source: "dns", note, likely: true };
+  return { ...r, note };
+}
+
+async function egressIp(): Promise<string> {
+  try {
+    const r = await fetch("https://api.ipify.org?format=json");
+    const j = (await r.json()) as { ip?: string };
+    return j.ip ?? "0.0.0.0";
+  } catch {
+    return "0.0.0.0";
+  }
+}
+
+// Namecheap domains.check — authoritative availability + premium pricing.
+async function namecheapCheck(
+  domains: string[]
+): Promise<{ results: Map<string, DomainResult>; issue?: string }> {
+  const results = new Map<string, DomainResult>();
+  const user = process.env.NAMECHEAP_API_USER;
+  const key = process.env.NAMECHEAP_API_KEY;
+  if (!user || !key || domains.length === 0) return { results, issue: user && key ? undefined : "Namecheap not configured" };
+  const ip = await egressIp();
+  for (let i = 0; i < domains.length; i += 50) {
+    const chunk = domains.slice(i, i + 50);
+    const url = new URL("https://api.namecheap.com/xml.response");
+    url.search = new URLSearchParams({
+      ApiUser: user, ApiKey: key, UserName: user, ClientIp: ip,
+      Command: "namecheap.domains.check", DomainList: chunk.join(","),
+    }).toString();
+    let xml = "";
+    try {
+      xml = await (await fetch(url.toString())).text();
+    } catch (e) {
+      return { results, issue: `Namecheap unreachable: ${e instanceof Error ? e.message : "network"}` };
+    }
+    if (/Status="ERROR"/i.test(xml)) {
+      const msg = xml.match(/<Error[^>]*>([^<]*)<\/Error>/i)?.[1]?.trim() ?? "error";
+      const ipIssue = /IP|1011150/i.test(msg);
+      return { results, issue: ipIssue ? `Namecheap: whitelist IP ${ip}` : `Namecheap: ${msg}` };
+    }
+    for (const m of xml.matchAll(/<DomainCheckResult\b([^>]*)\/?>/gi)) {
+      const attrs: Record<string, string> = {};
+      for (const a of m[1].matchAll(/(\w+)="([^"]*)"/g)) attrs[a[1].toLowerCase()] = a[2];
+      const d = attrs.domain?.toLowerCase();
+      if (!d) continue;
+      const premium = attrs.ispremiumname === "true";
+      const pp = Number(attrs.premiumregistrationprice);
+      results.set(d, {
+        domain: d,
+        available: attrs.available === "true",
+        price: premium && pp > 0 ? pp : null,
+        currency: "USD",
+        source: "namecheap",
+      });
+    }
+  }
+  return { results };
+}
+
+async function checkMany(domains: string[], attempts = 3): Promise<{ results: DomainResult[]; issue?: string }> {
+  const nc = await namecheapCheck(domains);
+  const results = await mapWithConcurrency(domains, 4, (d) => {
+    const hit = nc.results.get(d.toLowerCase());
+    return hit ? Promise.resolve(hit) : fallbackCheck(d, attempts, nc.issue);
+  });
+  return { results, issue: nc.issue };
+}
+
+async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> {
+  return (await checkMany([domain], attempts)).results[0];
 }
 
 // Simple concurrency limiter — RDAP starts throwing 429 when we blast 10+ parallel
@@ -276,7 +352,7 @@ export const runIteration = createServerFn({ method: "POST" })
     if (ideas.length === 0) {
       return { ideas, results: [] as DomainResult[] };
     }
-    const results = await mapWithConcurrency(ideas, 4, (d) => checkDomain(d));
+    const { results } = await checkMany(ideas);
     return { ideas, results };
   });
 
