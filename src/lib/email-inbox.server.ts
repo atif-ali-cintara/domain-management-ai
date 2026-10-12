@@ -126,43 +126,44 @@ export async function classifyEmails(items: ClassifyInput[]): Promise<ClassifyOu
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-6-astra",
+      reasoning_effort: "low",
       messages: [
         {
           role: "system",
           content:
-            "You triage business emails for a company that manages domains, registrar accounts and multiple companies. For each email return category (critical = security alerts, payment failures, domain expiry, legal deadlines, account lockouts; important = needs a reply or decision soon; informational = receipts, confirmations, updates; not-important = low value notifications; promotion = marketing; junk = spam/phishing), a one-sentence summary, and action_required (short imperative, or 'None').",
+            "You triage business emails for a company that manages domains, registrar accounts and multiple companies. For each email return category (critical = security alerts, payment failures, domain expiry, legal deadlines, account lockouts; important = needs a reply or decision soon; informational = receipts, confirmations, updates; not-important = low value notifications; promotion = marketing; junk = spam/phishing), a one-sentence summary, and action_required (short imperative, or 'None'). Respond in JSON.",
         },
         { role: "user", content: JSON.stringify(items) },
       ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "classify",
-            parameters: {
-              type: "object",
-              properties: {
-                results: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string" },
-                      category: { type: "string", enum: [...EMAIL_CATEGORIES] },
-                      summary: { type: "string" },
-                      action_required: { type: "string" },
-                    },
-                    required: ["id", "category", "summary", "action_required"],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "classify",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              results: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    id: { type: "string" },
+                    category: { type: "string", enum: [...EMAIL_CATEGORIES] },
+                    summary: { type: "string" },
+                    action_required: { type: "string" },
                   },
+                  required: ["id", "category", "summary", "action_required"],
                 },
               },
-              required: ["results"],
             },
+            required: ["results"],
           },
         },
-      ],
-      tool_choice: { type: "function", function: { name: "classify" } },
+      },
     }),
   });
   if (!res.ok) {
@@ -171,7 +172,7 @@ export async function classifyEmails(items: ClassifyInput[]): Promise<ClassifyOu
   }
   const j: any = await res.json();
   try {
-    const args = JSON.parse(j.choices[0].message.tool_calls[0].function.arguments);
+    const args = JSON.parse(j.choices[0].message.content);
     return args.results as ClassifyOut[];
   } catch {
     return items.map((i) => ({ id: i.id, category: "informational", summary: i.snippet.slice(0, 160), action_required: "Review" }));
