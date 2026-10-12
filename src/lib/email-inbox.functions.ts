@@ -222,7 +222,7 @@ export const updateInboxMessage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, boolean> = {};
+    const patch: { is_pinned?: boolean; dismissed?: boolean } = {};
     if (data.is_pinned !== undefined) patch.is_pinned = data.is_pinned;
     if (data.dismissed !== undefined) patch.dismissed = data.dismissed;
     const { error } = await supabaseAdmin.from("email_messages").update(patch).eq("id", data.id);
