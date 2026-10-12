@@ -88,6 +88,9 @@ type Result = {
   available: boolean | null;
   price: number | null;
   error?: string | null;
+  source?: "namecheap" | "dns" | "registry";
+  note?: string;
+  likely?: boolean;
 };
 
 type FeedbackEntry = {
@@ -1049,8 +1052,16 @@ function BranchCard({
                   />
                   <span className="truncate font-medium">{r.domain}</span>
                   <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title="Character count (including TLD)">{r.domain.length} chars</span>
-                  {r.available === true && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">available</span>}
+                  {r.available === true && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">{r.likely ? "likely available" : "available"}</span>}
                   {r.available === false && <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-600">taken</span>}
+                  {r.source && (
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground" title={r.note ?? undefined}>
+                      {r.source === "namecheap" ? "Namecheap" : r.source === "dns" ? "web settings" : "registry"}
+                    </span>
+                  )}
+                  {r.note && r.source !== "namecheap" && (
+                    <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600" title={r.note}>{r.note}</span>
+                  )}
                   {isUnknown && (
                     <span
                       className="rounded-full bg-slate-500/10 px-2 py-0.5 text-[11px] text-slate-500"
