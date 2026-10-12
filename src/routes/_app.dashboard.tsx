@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_app/dashboard")({
   errorComponent: ({ error }) => (
     <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm">
       <div className="font-medium text-destructive">Could not load portfolio</div>
-      <div className="mt-1 text-muted-foreground">{error.message}</div>
+      <div className="mt-1 text-muted-foreground">{error instanceof Error ? error.message : String(error)}</div>
     </div>
   ),
 });
