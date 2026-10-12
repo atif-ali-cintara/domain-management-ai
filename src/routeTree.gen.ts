@@ -23,6 +23,7 @@ import { Route as AppIdentitiesRouteImport } from './routes/_app.identities'
 import { Route as AppHunterRouteImport } from './routes/_app.hunter'
 import { Route as AppDomainsRouteImport } from './routes/_app.domains'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolidated-email'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
 import { Route as AppAccountAccessRouteImport } from './routes/_app.account-access'
@@ -97,6 +98,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppConsolidatedEmailRoute = AppConsolidatedEmailRouteImport.update({
+  id: '/consolidated-email',
+  path: '/consolidated-email',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCompaniesRoute = AppCompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/account-access': typeof AppAccountAccessRoute
   '/audit-log': typeof AppAuditLogRoute
   '/companies': typeof AppCompaniesRoute
+  '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/account-access': typeof AppAccountAccessRoute
   '/audit-log': typeof AppAuditLogRoute
   '/companies': typeof AppCompaniesRoute
+  '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/_app/account-access': typeof AppAccountAccessRoute
   '/_app/audit-log': typeof AppAuditLogRoute
   '/_app/companies': typeof AppCompaniesRoute
+  '/_app/consolidated-email': typeof AppConsolidatedEmailRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/domains': typeof AppDomainsRoute
   '/_app/hunter': typeof AppHunterRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/account-access'
     | '/audit-log'
     | '/companies'
+    | '/consolidated-email'
     | '/dashboard'
     | '/domains'
     | '/hunter'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/account-access'
     | '/audit-log'
     | '/companies'
+    | '/consolidated-email'
     | '/dashboard'
     | '/domains'
     | '/hunter'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_app/account-access'
     | '/_app/audit-log'
     | '/_app/companies'
+    | '/_app/consolidated-email'
     | '/_app/dashboard'
     | '/_app/domains'
     | '/_app/hunter'
@@ -345,6 +357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/consolidated-email': {
+      id: '/_app/consolidated-email'
+      path: '/consolidated-email'
+      fullPath: '/consolidated-email'
+      preLoaderRoute: typeof AppConsolidatedEmailRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/companies': {
       id: '/_app/companies'
       path: '/companies'
@@ -380,6 +399,7 @@ interface AppRouteChildren {
   AppAccountAccessRoute: typeof AppAccountAccessRoute
   AppAuditLogRoute: typeof AppAuditLogRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
+  AppConsolidatedEmailRoute: typeof AppConsolidatedEmailRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDomainsRoute: typeof AppDomainsRoute
   AppHunterRoute: typeof AppHunterRoute
@@ -397,6 +417,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountAccessRoute: AppAccountAccessRoute,
   AppAuditLogRoute: AppAuditLogRoute,
   AppCompaniesRoute: AppCompaniesRoute,
+  AppConsolidatedEmailRoute: AppConsolidatedEmailRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDomainsRoute: AppDomainsRoute,
   AppHunterRoute: AppHunterRoute,
