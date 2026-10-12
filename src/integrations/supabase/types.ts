@@ -71,6 +71,107 @@ export type Database = {
         }
         Relationships: []
       }
+      email_accounts: {
+        Row: {
+          company_name: string | null
+          connected_by: string | null
+          created_at: string
+          email: string
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          refresh_token_enc: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          connected_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          refresh_token_enc?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          connected_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          refresh_token_enc?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_messages: {
+        Row: {
+          account_id: string
+          action_required: string | null
+          category: string
+          created_at: string
+          dismissed: boolean
+          gmail_id: string
+          id: string
+          is_pinned: boolean
+          is_read: boolean
+          received_at: string | null
+          sender: string | null
+          snippet: string | null
+          subject: string | null
+          summary: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          account_id: string
+          action_required?: string | null
+          category?: string
+          created_at?: string
+          dismissed?: boolean
+          gmail_id: string
+          id?: string
+          is_pinned?: boolean
+          is_read?: boolean
+          received_at?: string | null
+          sender?: string | null
+          snippet?: string | null
+          subject?: string | null
+          summary?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          action_required?: string | null
+          category?: string
+          created_at?: string
+          dismissed?: boolean
+          gmail_id?: string
+          id?: string
+          is_pinned?: boolean
+          is_read?: boolean
+          received_at?: string | null
+          sender?: string | null
+          snippet?: string | null
+          subject?: string | null
+          summary?: string | null
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
