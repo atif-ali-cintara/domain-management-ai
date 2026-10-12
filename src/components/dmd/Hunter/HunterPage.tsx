@@ -346,6 +346,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
                     available: r.available,
                     price: r.price,
                     error: r.error,
+                    source: r.source, note: r.note, likely: r.likely,
                   })),
                 ],
                 iterByBranch: { ...h.iterByBranch, [branch.id]: (h.iterByBranch[branch.id] ?? 0) + 1 },
@@ -905,7 +906,7 @@ function BranchCard({
       update((h) => ({
         results: h.results.map((r) =>
           r.branchId === branch.id && r.domain === domain
-            ? { ...r, available: result.available, price: result.price, error: result.error ?? null }
+            ? { ...r, available: result.available, price: result.price, error: result.error ?? null, source: result.source, note: result.note, likely: result.likely }
             : r
         ),
       }));
@@ -953,6 +954,7 @@ function BranchCard({
             available: r.available,
             price: r.price,
             error: r.error,
+            source: r.source, note: r.note, likely: r.likely,
           })),
         ],
         iterByBranch: { ...h.iterByBranch, [branch.id]: iter + 1 },

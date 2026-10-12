@@ -352,7 +352,7 @@ export const runIteration = createServerFn({ method: "POST" })
     if (ideas.length === 0) {
       return { ideas, results: [] as DomainResult[] };
     }
-    const results = await mapWithConcurrency(ideas, 4, (d) => checkDomain(d));
+    const { results } = await checkMany(ideas);
     return { ideas, results };
   });
 
