@@ -136,10 +136,51 @@ Generate ${batchSize} NEW domain ideas that DO NOT appear in the history above. 
   ).slice(0, batchSize);
 }
 
-async function rdapOnce(domain: string): Promise<{ status: number } | { networkError: string }> {
+const RDAP_HEADERS = {
+  Accept: "application/rdap+json, application/json",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+};
+
+const DIRECT_RDAP: Record<string, string> = {
+  com: "https://rdap.verisign.com/com/v1/",
+  net: "https://rdap.verisign.com/net/v1/",
+};
+
+let ianaCache: Promise<Record<string, string>> | null = null;
+function ianaBootstrap(): Promise<Record<string, string>> {
+  if (!ianaCache) {
+    ianaCache = fetch("https://data.iana.org/rdap/dns.json", { headers: RDAP_HEADERS })
+      .then((r) => (r.ok ? r.json() : { services: [] }))
+      .then((j: { services?: [string[], string[]][] }) => {
+        const map: Record<string, string> = {};
+        for (const [tlds, urls] of j.services ?? []) {
+          const url = urls.find((u) => u.startsWith("https")) ?? urls[0];
+          if (!url) continue;
+          for (const t of tlds) map[t.toLowerCase()] = url.endsWith("/") ? url : url + "/";
+        }
+        return map;
+      })
+      .catch(() => {
+        ianaCache = null;
+        return {};
+      });
+  }
+  return ianaCache;
+}
+
+async function rdapBase(domain: string): Promise<string> {
+  const tld = domain.split(".").slice(1).join(".").toLowerCase();
+  const last = domain.split(".").pop()!.toLowerCase();
+  if (DIRECT_RDAP[last]) return DIRECT_RDAP[last];
+  const map = await ianaBootstrap();
+  return map[tld] ?? map[last] ?? "https://rdap.org/";
+}
+
+async function rdapOnce(domain: string, base: string): Promise<{ status: number } | { networkError: string }> {
   try {
-    const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
-      headers: { Accept: "application/rdap+json" },
+    const res = await fetch(`${base}domain/${encodeURIComponent(domain)}`, {
+      headers: RDAP_HEADERS,
       redirect: "follow",
     });
     return { status: res.status };
@@ -148,13 +189,33 @@ async function rdapOnce(domain: string): Promise<{ status: number } | { networkE
   }
 }
 
+// DNS-over-HTTPS: active NS records => definitely registered.
+async function dnsCheck(domain: string): Promise<"taken" | "nxdomain" | "unknown"> {
+  try {
+    const res = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=NS`,
+      { headers: { Accept: "application/dns-json" } }
+    );
+    if (!res.ok) return "unknown";
+    const j = (await res.json()) as { Status?: number; Answer?: unknown[]; Authority?: unknown[] };
+    if (j.Status === 3) return "nxdomain";
+    if (j.Status === 0 && Array.isArray(j.Answer) && j.Answer.length > 0) return "taken";
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
 async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> {
-  // RDAP is the free, keyless successor to WHOIS. 404 = available, 200 = registered.
-  // Retry transient failures (429 / 5xx / network) with exponential backoff + jitter
-  // so a rate-limited request doesn't get silently reported as "Unknown".
+  // Tier 1: DNS — live nameservers mean the domain is registered.
+  const dns = await dnsCheck(domain);
+  if (dns === "taken") return { domain, available: false, price: null, currency: "USD" };
+
+  // Tier 2: authoritative RDAP (direct registry for .com/.net, IANA bootstrap otherwise).
+  let base = await rdapBase(domain);
   let lastErr = "Unknown";
   for (let i = 0; i < attempts; i++) {
-    const r = await rdapOnce(domain);
+    const r = await rdapOnce(domain, base);
     if ("networkError" in r) {
       lastErr = r.networkError;
     } else if (r.status === 404) {
@@ -164,8 +225,10 @@ async function checkDomain(domain: string, attempts = 3): Promise<DomainResult> 
     } else if (r.status === 429 || r.status >= 500) {
       lastErr = `RDAP ${r.status}`;
     } else {
-      // e.g. 400/403 — TLD not covered; retrying won't help.
-      return { domain, available: null, price: null, error: `RDAP ${r.status}` };
+      lastErr = `RDAP ${r.status}`;
+      // Registry refused us — fall back to rdap.org once.
+      if (base !== "https://rdap.org/") base = "https://rdap.org/";
+      else break;
     }
     if (i < attempts - 1) {
       const delay = 400 * Math.pow(2, i) + Math.floor(Math.random() * 250);
