@@ -1319,10 +1319,32 @@ function SaveShareBar({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> 
       if (!id) return;
       const res = await share({ data: { id, enabled } });
       update({ shareToken: res.share_token });
+      return res.share_token;
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Sharing failed");
     } finally {
       setSharing(false);
+    }
+  }
+
+  // One click: save latest list + cart, create the link if needed, copy it.
+  async function quickShare() {
+    setOpen(true);
+    let token = hunt.shareToken ?? null;
+    if (token) {
+      setSharing(true);
+      await doSave();
+      setSharing(false);
+    } else {
+      token = (await toggleShare(true)) ?? null;
+    }
+    if (token) {
+      try {
+        await navigator.clipboard.writeText(shareUrl(token));
+        setCopied(true);
+        setMsg("Link copied");
+        setTimeout(() => { setCopied(false); setMsg(null); }, 2000);
+      } catch { /* clipboard blocked — link is shown in the popover */ }
     }
   }
 
@@ -1338,10 +1360,11 @@ function SaveShareBar({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> 
         {hunt.savedId ? "Save changes" : "Save"}
       </button>
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+        onClick={() => (open ? setOpen(false) : quickShare())}
+        disabled={sharing}
+        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
       >
-        <Share2 className="h-3.5 w-3.5" /> Share
+        {sharing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />} Share
       </button>
       {open && (
         <div className="absolute right-0 top-full z-30 mt-2 w-80 rounded-lg border border-border bg-card p-4 shadow-lg">
