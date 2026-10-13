@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown, Save, Share2, FolderOpen, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
@@ -92,6 +92,7 @@ type Result = {
   source?: "namecheap" | "dns" | "registry";
   note?: string;
   likely?: boolean;
+  iter?: number;
 };
 
 type FeedbackEntry = {
@@ -119,6 +120,7 @@ type Hunt = {
   feedback: FeedbackEntry[];
   savedId?: string;
   shareToken?: string | null;
+  readSections?: string[];
 };
 
 export type SharedHuntData = Hunt;
@@ -383,6 +385,7 @@ function HuntWorkspace({
                     price: r.price,
                     error: r.error,
                     source: r.source, note: r.note, likely: r.likely,
+                    iter: iterSnapshot + 1,
                   })),
                 ],
                 iterByBranch: { ...h.iterByBranch, [branch.id]: (h.iterByBranch[branch.id] ?? 0) + 1 },
@@ -984,6 +987,15 @@ function BranchCard({
   const iter = hunt.iterByBranch[branch.id] ?? 0;
   const visibleResults = hideTaken ? branchResults.filter((r) => r.available !== false) : branchResults;
   const hiddenTaken = branchResults.length - visibleResults.length;
+  const sections = useMemo(() => {
+    const m = new Map<number, Result[]>();
+    for (const r of visibleResults) {
+      const k = r.iter ?? 1;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(r);
+    }
+    return Array.from(m.entries()).sort((x, y) => y[0] - x[0]).map(([iter, rows]) => ({ iter, rows }));
+  }, [visibleResults]);
 
   async function doRun() {
     setRunning(true);
@@ -1014,6 +1026,7 @@ function BranchCard({
             price: r.price,
             error: r.error,
             source: r.source, note: r.note, likely: r.likely,
+            iter: iter + 1,
           })),
         ],
         iterByBranch: { ...h.iterByBranch, [branch.id]: iter + 1 },
@@ -1084,8 +1097,27 @@ function BranchCard({
 
       {branchResults.length > 0 && (
         <>
-        <ul className="mt-4 divide-y divide-border">
-          {visibleResults.map((r) => {
+        <div className="mt-4 space-y-4">
+          {sections.map((sec) => {
+            const key = `${branch.id}:${sec.iter}`;
+            const isRead = (hunt.readSections ?? []).includes(key);
+            const toggleRead = (v: boolean) =>
+              update((h) => {
+                const cur = new Set(h.readSections ?? []);
+                if (v) cur.add(key); else cur.delete(key);
+                return { readSections: Array.from(cur) };
+              });
+            return (
+              <IterationSection
+                key={key}
+                title={`${branch.name} — ${ordinal(sec.iter)} Iteration`}
+                count={sec.rows.length}
+                availableCount={sec.rows.filter((r) => r.available === true).length}
+                isRead={isRead}
+                onToggleRead={toggleRead}
+              >
+                <ul className="divide-y divide-border">
+                  {sec.rows.map((r) => {
             const tld = "." + r.domain.split(".").slice(1).join(".");
             const def = allTlds.get(tld);
             const annualEst = def?.avg ?? null;
@@ -1165,7 +1197,11 @@ function BranchCard({
               </li>
             );
           })}
-        </ul>
+                </ul>
+              </IterationSection>
+            );
+          })}
+        </div>
         {hideTaken && hiddenTaken > 0 && (
           <p className="mt-2 text-xs text-muted-foreground">
             {hiddenTaken} taken {hiddenTaken === 1 ? "domain" : "domains"} hidden ·{" "}
@@ -1538,6 +1574,74 @@ function SavedHuntsMenu({ onOpen, onDeleted }: { onOpen: (h: Hunt) => void; onDe
                 </button>
               </div>
             ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ordinal(n: number) {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+}
+
+function IterationSection({
+  title,
+  count,
+  availableCount,
+  isRead,
+  onToggleRead,
+  children,
+}: {
+  title: string;
+  count: number;
+  availableCount: number;
+  isRead: boolean;
+  onToggleRead: (v: boolean) => void;
+  children: ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(isRead);
+  const [reachedEnd, setReachedEnd] = useState(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (isRead || collapsed || !endRef.current) return;
+    const el = endRef.current;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) setReachedEnd(true);
+    }, { threshold: 1 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [isRead, collapsed]);
+  return (
+    <div className={`rounded-lg border ${isRead ? "border-border bg-muted/30" : "border-primary/30 bg-background"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <button onClick={() => setCollapsed((c) => !c)} className="flex items-center gap-2 text-left text-sm font-semibold">
+          {!isRead && <span className="h-2 w-2 rounded-full bg-primary" title="Unread" />}
+          <span className={isRead ? "text-muted-foreground" : ""}>{title}</span>
+          <span className="text-[11px] font-normal text-muted-foreground">{count} shown · {availableCount} available{collapsed ? " · click to expand" : ""}</span>
+        </button>
+        <button
+          onClick={() => { onToggleRead(!isRead); setCollapsed(!isRead); setReachedEnd(false); }}
+          className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] ${isRead ? "border-border text-muted-foreground hover:bg-muted" : "border-primary/40 text-primary hover:bg-primary/10"}`}
+        >
+          {isRead ? "Mark as unread" : "Mark section as read"}
+        </button>
+      </div>
+      {!collapsed && (
+        <div className="px-3">
+          {children}
+          {!isRead && (
+            <div ref={endRef} className={`my-2 flex items-center justify-between gap-2 rounded-md px-3 py-2 text-xs transition-colors ${reachedEnd ? "bg-primary/10 text-foreground" : "text-muted-foreground"}`}>
+              <span>{reachedEnd ? "Finished this section?" : "End of section"}</span>
+              <button
+                onClick={() => { onToggleRead(true); setCollapsed(true); }}
+                className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground"
+              >
+                Mark as read
+              </button>
+            </div>
           )}
         </div>
       )}
