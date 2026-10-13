@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791916078328,
+      "tag": "0000_cintara_only_google_signup",
+      "breakpoints": true
+    }
+  ]
+}
