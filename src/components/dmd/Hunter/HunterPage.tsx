@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown, Save, Share2, FolderOpen, Copy, Check } from "lucide-react";
+import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown, Save, Share2, FolderOpen, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
 import { listSavedHunts, loadSavedHunt, saveHunt, setHuntSharing, deleteSavedHunt } from "@/lib/saved-hunts.functions";
 
@@ -156,12 +156,13 @@ export function HunterPage() {
   const [hunts, setHunts] = useState<Hunt[]>([newHunt()]);
   const [activeId, setActiveId] = useState<string>("");
   const [hydrated, setHydrated] = useState(false);
+  const [hideTaken, setHideTaken] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE);
       if (raw) {
-        const parsed = JSON.parse(raw) as { hunts: Hunt[]; activeId: string };
+        const parsed = JSON.parse(raw) as { hunts: Hunt[]; activeId: string; hideTaken?: boolean };
         if (parsed?.hunts?.length) {
           // Backfill fields added after this hunt was persisted.
           const normalized = parsed.hunts.map((h) => ({
@@ -171,6 +172,7 @@ export function HunterPage() {
           }));
           setHunts(normalized);
           setActiveId(parsed.activeId || normalized[0].id);
+          setHideTaken(Boolean(parsed.hideTaken));
           setHydrated(true);
           return;
         }
@@ -186,11 +188,11 @@ export function HunterPage() {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE, JSON.stringify({ hunts, activeId }));
+      localStorage.setItem(STORAGE, JSON.stringify({ hunts, activeId, hideTaken }));
     } catch {
       /* ignore */
     }
-  }, [hunts, activeId, hydrated]);
+  }, [hunts, activeId, hideTaken, hydrated]);
 
   const active = hunts.find((h) => h.id === activeId) ?? hunts[0];
 
@@ -268,14 +270,24 @@ export function HunterPage() {
       </div>
 
       <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1fr_360px]">
-        <HuntWorkspace key={active.id} hunt={active} update={updateActive} />
+        <HuntWorkspace key={active.id} hunt={active} update={updateActive} hideTaken={hideTaken} setHideTaken={setHideTaken} />
         <CartPanel hunt={active} update={updateActive} />
       </div>
     </div>
   );
 }
 
-function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void }) {
+function HuntWorkspace({
+  hunt,
+  update,
+  hideTaken,
+  setHideTaken,
+}: {
+  hunt: Hunt;
+  update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void;
+  hideTaken: boolean;
+  setHideTaken: (v: boolean) => void;
+}) {
   const [renaming, setRenaming] = useState(false);
   const [mapping, setMapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,6 +298,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
   const [huntProgress, setHuntProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const map = useServerFn(mapBranches);
   const run = useServerFn(runIteration);
+  const takenCount = hunt.results.filter((r) => r.available === false).length;
 
   const allTlds = useMemo(() => {
     const out = new Map<string, TldDef>();
@@ -555,6 +568,22 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
               </div>
             </div>
             <div className="flex flex-wrap items-end gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={hideTaken}
+                onClick={() => setHideTaken(!hideTaken)}
+                title="Hide domains that are already taken"
+                className={[
+                  "inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-medium transition",
+                  hideTaken
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted",
+                ].join(" ")}
+              >
+                {hideTaken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                Hide taken{takenCount > 0 ? ` (${takenCount})` : ""}
+              </button>
               <label className="text-xs text-muted-foreground">
                 Iterations / branch
                 <input
@@ -603,7 +632,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
             </div>
           </div>
           {hunt.branches.map((b) => (
-            <BranchCard key={b.id} hunt={hunt} branch={b} update={update} allTlds={allTlds} />
+            <BranchCard key={b.id} hunt={hunt} branch={b} update={update} allTlds={allTlds} hideTaken={hideTaken} setHideTaken={setHideTaken} />
           ))}
         </section>
       )}
@@ -910,11 +939,15 @@ function BranchCard({
   branch,
   update,
   allTlds,
+  hideTaken,
+  setHideTaken,
 }: {
   hunt: Hunt;
   branch: Branch;
   update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void;
   allTlds: Map<string, TldDef>;
+  hideTaken: boolean;
+  setHideTaken: (v: boolean) => void;
 }) {
   const [running, setRunning] = useState(false);
   const [batchSize, setBatchSize] = useState(10);
@@ -949,6 +982,8 @@ function BranchCard({
   const branchResults = hunt.results.filter((r) => r.branchId === branch.id);
   const availableCount = branchResults.filter((r) => r.available === true).length;
   const iter = hunt.iterByBranch[branch.id] ?? 0;
+  const visibleResults = hideTaken ? branchResults.filter((r) => r.available !== false) : branchResults;
+  const hiddenTaken = branchResults.length - visibleResults.length;
 
   async function doRun() {
     setRunning(true);
@@ -1048,8 +1083,9 @@ function BranchCard({
       {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
 
       {branchResults.length > 0 && (
+        <>
         <ul className="mt-4 divide-y divide-border">
-          {branchResults.map((r) => {
+          {visibleResults.map((r) => {
             const tld = "." + r.domain.split(".").slice(1).join(".");
             const def = allTlds.get(tld);
             const annualEst = def?.avg ?? null;
@@ -1130,6 +1166,15 @@ function BranchCard({
             );
           })}
         </ul>
+        {hideTaken && hiddenTaken > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {hiddenTaken} taken {hiddenTaken === 1 ? "domain" : "domains"} hidden ·{" "}
+            <button onClick={() => setHideTaken(false)} className="underline hover:text-foreground">
+              show them
+            </button>
+          </p>
+        )}
+        </>
       )}
 
     </div>
