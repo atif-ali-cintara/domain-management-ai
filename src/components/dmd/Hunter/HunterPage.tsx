@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown, Save, Share2, FolderOpen, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
@@ -1583,8 +1583,8 @@ function SavedHuntsMenu({ onOpen, onDeleted }: { onOpen: (h: Hunt) => void; onDe
 
 function ordinal(n: number) {
   const v = n % 100;
-  const suf = v >= 11 && v <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
-  return `${n}${["th", "st", "nd", "rd"][n % 10] && !(v >= 11 && v <= 13) ? suf : "th"}`;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 }
 
 function IterationSection({
@@ -1600,7 +1600,7 @@ function IterationSection({
   availableCount: number;
   isRead: boolean;
   onToggleRead: (v: boolean) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(isRead);
   const [reachedEnd, setReachedEnd] = useState(false);
