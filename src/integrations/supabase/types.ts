@@ -196,6 +196,36 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_hunts: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          name: string
+          owner_id: string
+          share_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          name?: string
+          owner_id: string
+          share_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          name?: string
+          owner_id?: string
+          share_token?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -222,6 +252,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shared_hunt: {
+        Args: { _token: string }
+        Returns: {
+          data: Json
+          name: string
+          updated_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
