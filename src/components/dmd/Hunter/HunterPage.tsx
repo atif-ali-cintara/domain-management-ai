@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Plus, X, Sparkles, Loader2, ExternalLink, ShoppingCart, Trash2, ListChecks, Play, RotateCw, MessageSquare, ThumbsUp, ThumbsDown, Save, Share2, FolderOpen, Copy, Check } from "lucide-react";
 import { mapBranches, runIteration, suggestTlds, recheckDomain, type Branch, type SuggestedTld } from "@/lib/domain-hunter.functions";
+import { listSavedHunts, loadSavedHunt, saveHunt, setHuntSharing, deleteSavedHunt } from "@/lib/saved-hunts.functions";
 
 type TldDef = { tld: string; tier: 1 | 2 | 3 | 4; avg: number };
 type TldGroup = { name: string; tlds: TldDef[] };
@@ -116,7 +117,11 @@ type Hunt = {
   iterByBranch: Record<string, number>;
   customGroups: TldGroup[];
   feedback: FeedbackEntry[];
+  savedId?: string;
+  shareToken?: string | null;
 };
+
+export type SharedHuntData = Hunt;
 
 const STORAGE = "dmd.hunts.v1";
 
@@ -245,6 +250,21 @@ export function HunterPage() {
             New hunt
           </button>
         </div>
+        <SavedHuntsMenu
+          onOpen={(h) => {
+            const existing = hunts.find((x) => x.savedId === h.savedId);
+            if (existing) {
+              setHunts((p) => p.map((x) => (x.id === existing.id ? { ...h, id: existing.id } : x)));
+              setActiveId(existing.id);
+            } else {
+              setHunts((p) => [...p, h]);
+              setActiveId(h.id);
+            }
+          }}
+          onDeleted={(savedId) =>
+            setHunts((p) => p.map((x) => (x.savedId === savedId ? { ...x, savedId: undefined, shareToken: null } : x)))
+          }
+        />
       </div>
 
       <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1fr_360px]">
@@ -392,6 +412,7 @@ function HuntWorkspace({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt>
             {hunt.name}
           </h1>
         )}
+        <SaveShareBar hunt={hunt} update={update} />
       </div>
 
       <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
