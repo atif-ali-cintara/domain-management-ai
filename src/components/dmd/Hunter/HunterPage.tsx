@@ -1169,8 +1169,8 @@ function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | (
   }, [candidates]);
 
   return (
-    <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-      <div className="rounded-xl border border-border bg-card shadow-sm">
+    <aside className="flex flex-col space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start">
+      <div className="flex min-h-0 max-h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="flex items-center gap-4 border-b border-border px-4 pt-3">
           <button
             onClick={() => setTab("list")}
@@ -1192,7 +1192,7 @@ function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | (
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {tab === "list" ? (
             candidates.length === 0 ? (
               <div className="py-10 text-center">
