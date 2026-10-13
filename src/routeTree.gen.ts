@@ -27,6 +27,7 @@ import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolid
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
 import { Route as AppAccountAccessRouteImport } from './routes/_app.account-access'
+import { Route as ShareHuntTokenRouteImport } from './routes/share.hunt.$token'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 
 const AuthRoute = AuthRouteImport.update({
@@ -118,6 +119,11 @@ const AppAccountAccessRoute = AppAccountAccessRouteImport.update({
   path: '/account-access',
   getParentRoute: () => AppRoute,
 } as any)
+const ShareHuntTokenRoute = ShareHuntTokenRouteImport.update({
+  id: '/share/hunt/$token',
+  path: '/share/hunt/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
   id: '/api/public/google/callback',
   path: '/api/public/google/callback',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/usage': typeof AppUsageRoute
+  '/share/hunt/$token': typeof ShareHuntTokenRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/usage': typeof AppUsageRoute
+  '/share/hunt/$token': typeof ShareHuntTokenRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRoutesById {
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/usage': typeof AppUsageRoute
+  '/share/hunt/$token': typeof ShareHuntTokenRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRouteTypes {
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/usage'
+    | '/share/hunt/$token'
     | '/api/public/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/usage'
+    | '/share/hunt/$token'
     | '/api/public/google/callback'
   id:
     | '__root__'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/tasks'
     | '/_app/usage'
+    | '/share/hunt/$token'
     | '/api/public/google/callback'
   fileRoutesById: FileRoutesById
 }
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ShareHuntTokenRoute: typeof ShareHuntTokenRoute
   ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
 }
 
@@ -385,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountAccessRouteImport
       parentRoute: typeof AppRoute
     }
+    '/share/hunt/$token': {
+      id: '/share/hunt/$token'
+      path: '/share/hunt/$token'
+      fullPath: '/share/hunt/$token'
+      preLoaderRoute: typeof ShareHuntTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/google/callback': {
       id: '/api/public/google/callback'
       path: '/api/public/google/callback'
@@ -437,6 +457,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  ShareHuntTokenRoute: ShareHuntTokenRoute,
   ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport

@@ -8,6 +8,13 @@
       "when": 1791916078328,
       "tag": "0000_cintara_only_google_signup",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791916963379,
+      "tag": "0001_saved_hunts",
+      "breakpoints": true
     }
   ]
 }
