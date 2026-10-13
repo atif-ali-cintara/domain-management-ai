@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const IterationInput = z.object({
-  prompt: z.string().min(1).max(500),
+  prompt: z.string().min(1).max(4000),
   iteration: z.number().int().min(1).max(50),
   history: z
     .array(
@@ -24,9 +24,9 @@ const IterationInput = z.object({
 });
 
 const MapBranchesInput = z.object({
-  prompt: z.string().min(1).max(500),
+  prompt: z.string().min(1).max(4000),
   count: z.number().int().min(3).max(10).default(6),
-  inspiration: z.string().max(500).optional(),
+  inspiration: z.string().max(2000).optional(),
 });
 
 type DomainResult = {
