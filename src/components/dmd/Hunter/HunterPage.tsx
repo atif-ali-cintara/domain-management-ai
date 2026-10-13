@@ -1083,6 +1083,7 @@ function BranchCard({
       {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
 
       {branchResults.length > 0 && (
+        <>
         <ul className="mt-4 divide-y divide-border">
           {visibleResults.map((r) => {
             const tld = "." + r.domain.split(".").slice(1).join(".");
@@ -1173,6 +1174,7 @@ function BranchCard({
             </button>
           </p>
         )}
+        </>
       )}
 
     </div>
