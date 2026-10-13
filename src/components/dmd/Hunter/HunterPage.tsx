@@ -298,6 +298,7 @@ function HuntWorkspace({
   const [huntProgress, setHuntProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const map = useServerFn(mapBranches);
   const run = useServerFn(runIteration);
+  const takenCount = hunt.results.filter((r) => r.available === false).length;
 
   const allTlds = useMemo(() => {
     const out = new Map<string, TldDef>();
