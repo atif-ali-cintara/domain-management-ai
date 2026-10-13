@@ -1280,3 +1280,199 @@ function CartPanel({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | (
     </aside>
   );
 }
+
+function shareUrl(token: string) {
+  return `${window.location.origin}/share/hunt/${token}`;
+}
+
+function SaveShareBar({ hunt, update }: { hunt: Hunt; update: (p: Partial<Hunt> | ((h: Hunt) => Partial<Hunt>)) => void }) {
+  const save = useServerFn(saveHunt);
+  const share = useServerFn(setHuntSharing);
+  const [saving, setSaving] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function doSave(): Promise<string | null> {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { savedId: _s, shareToken: _t, ...rest } = hunt;
+      const row = await save({ data: { id: hunt.savedId, name: hunt.name, data: JSON.stringify(rest) } });
+      update({ savedId: row.id, shareToken: row.share_token });
+      setMsg("Saved");
+      setTimeout(() => setMsg(null), 2000);
+      return row.id;
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Save failed");
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleShare(enabled: boolean) {
+    setSharing(true);
+    try {
+      const id = (await doSave()) ?? hunt.savedId;
+      if (!id) return;
+      const res = await share({ data: { id, enabled } });
+      update({ shareToken: res.share_token });
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Sharing failed");
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  return (
+    <div className="relative flex items-center gap-2">
+      {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
+      <button
+        onClick={doSave}
+        disabled={saving}
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+        {hunt.savedId ? "Save changes" : "Save"}
+      </button>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+      >
+        <Share2 className="h-3.5 w-3.5" /> Share
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-30 mt-2 w-80 rounded-lg border border-border bg-card p-4 shadow-lg">
+          <div className="mb-1 text-sm font-semibold">Share this hunt</div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Anyone with the link can view the brief, branches, results, cart and feedback. They can't change anything.
+            The link shows the last saved version.
+          </p>
+          {hunt.shareToken ? (
+            <>
+              <div className="flex gap-2">
+                <input readOnly value={shareUrl(hunt.shareToken)} className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs" onFocus={(e) => e.target.select()} />
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(shareUrl(hunt.shareToken!));
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <button
+                onClick={() => toggleShare(false)}
+                disabled={sharing}
+                className="mt-3 text-xs text-rose-600 hover:underline disabled:opacity-60"
+              >
+                Stop sharing (link will stop working)
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => toggleShare(true)}
+              disabled={sharing}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60"
+            >
+              {sharing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+              Save and create link
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SavedHuntsMenu({ onOpen, onDeleted }: { onOpen: (h: Hunt) => void; onDeleted: (savedId: string) => void }) {
+  const list = useServerFn(listSavedHunts);
+  const load = useServerFn(loadSavedHunt);
+  const del = useServerFn(deleteSavedHunt);
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<{ id: string; name: string; share_token: string | null; updated_at: string }[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function refresh() {
+    setErr(null);
+    try {
+      setItems(await list());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to load");
+    }
+  }
+
+  return (
+    <div className="relative shrink-0 pb-1">
+      <button
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next) refresh();
+        }}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+      >
+        <FolderOpen className="h-3.5 w-3.5" /> Saved hunts
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-30 mt-1 max-h-96 w-80 overflow-y-auto rounded-lg border border-border bg-card p-2 shadow-lg">
+          {err && <p className="p-2 text-xs text-rose-600">{err}</p>}
+          {items === null ? (
+            <div className="flex justify-center p-4"><Loader2 className="h-4 w-4 animate-spin" /></div>
+          ) : items.length === 0 ? (
+            <p className="p-3 text-xs text-muted-foreground">No saved hunts yet. Use "Save" on a hunt.</p>
+          ) : (
+            items.map((it) => (
+              <div key={it.id} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted">
+                <button
+                  className="min-w-0 flex-1 text-left"
+                  onClick={async () => {
+                    try {
+                      const row = await load({ data: { id: it.id } });
+                      const d = JSON.parse(row.data) as Partial<Hunt>;
+                      const fresh = newHunt(row.name);
+                      onOpen({
+                        ...fresh,
+                        ...d,
+                        id: fresh.id,
+                        name: row.name,
+                        selectedBranchIds: d.selectedBranchIds ?? d.branches?.map((b) => b.id) ?? [],
+                        feedback: d.feedback ?? [],
+                        savedId: row.id,
+                        shareToken: row.share_token,
+                      });
+                      setOpen(false);
+                    } catch (e) {
+                      setErr(e instanceof Error ? e.message : "Failed to open");
+                    }
+                  }}
+                >
+                  <div className="truncate text-xs font-medium">{it.name}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {new Date(it.updated_at).toLocaleString()} {it.share_token ? "· shared" : ""}
+                  </div>
+                </button>
+                <button
+                  title="Delete saved hunt"
+                  onClick={async () => {
+                    if (!confirm(`Delete saved hunt "${it.name}"? Shared links will stop working.`)) return;
+                    await del({ data: { id: it.id } });
+                    onDeleted(it.id);
+                    refresh();
+                  }}
+                  className="text-muted-foreground opacity-0 hover:text-rose-600 group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
