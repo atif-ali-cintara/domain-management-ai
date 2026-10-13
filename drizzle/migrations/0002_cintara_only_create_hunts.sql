@@ -1,0 +1,1 @@
+CREATE POLICY "Only cintara.ai can create hunts" ON public.saved_hunts AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK (lower(split_part(coalesce(auth.jwt() ->> 'email',''), '@', 2)) = 'cintara.ai');
