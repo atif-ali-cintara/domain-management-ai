@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const IterationInput = z.object({
-  prompt: z.string().min(1).max(500),
+  prompt: z.string().min(1).max(4000),
   iteration: z.number().int().min(1).max(50),
   history: z
     .array(
@@ -20,13 +20,13 @@ const IterationInput = z.object({
   branchDescription: z.string().max(300).optional(),
   batchSize: z.number().int().min(1).max(20).default(10),
   maxLength: z.number().int().min(5).max(40).optional(),
-  inspiration: z.string().max(500).optional(),
+  inspiration: z.string().max(2000).optional(),
 });
 
 const MapBranchesInput = z.object({
-  prompt: z.string().min(1).max(500),
+  prompt: z.string().min(1).max(4000),
   count: z.number().int().min(3).max(10).default(6),
-  inspiration: z.string().max(500).optional(),
+  inspiration: z.string().max(2000).optional(),
 });
 
 type DomainResult = {
@@ -409,7 +409,7 @@ Branches should be meaningfully different from each other. Return JSON only.`;
   });
 
 const SuggestTldsInput = z.object({
-  prompt: z.string().max(500).optional(),
+  prompt: z.string().max(4000).optional(),
   query: z.string().max(200).optional(),
   exclude: z.array(z.string()).max(200).optional(),
   count: z.number().int().min(3).max(20).default(10),
