@@ -109,15 +109,32 @@ function SharedHunt() {
             </section>
           )}
         </div>
-        <aside className="h-fit rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-2 font-semibold">Cart ({cart.length})</h2>
-          {cart.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nothing in the cart.</p>
-          ) : (
-            <ul className="space-y-1 text-xs">
-              {cart.map((d) => <li key={d} className="rounded-md border border-border bg-background px-2 py-1.5">{d}</li>)}
-            </ul>
-          )}
+        <aside className="h-fit space-y-4 lg:sticky lg:top-4">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h2 className="mb-2 font-semibold">Cart ({cart.length})</h2>
+            {cart.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nothing in the cart.</p>
+            ) : (
+              <ul className="max-h-[40vh] space-y-1 overflow-y-auto text-xs">
+                {cart.map((d) => <li key={d} className="rounded-md border border-border bg-background px-2 py-1.5">{d}</li>)}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h2 className="mb-2 font-semibold">List ({available.length})</h2>
+            {available.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No available domains.</p>
+            ) : (
+              <ul className="max-h-[40vh] space-y-1 overflow-y-auto text-xs">
+                {available.map((r) => (
+                  <li key={r.domain} className="flex justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5">
+                    <span className="truncate">{r.domain}</span>
+                    <span className="text-muted-foreground">{r.price != null ? `$${r.price.toFixed(2)}` : ""}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </aside>
       </main>
     </div>
