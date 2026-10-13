@@ -1,54 +1,67 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { signUpWithDomainCheck } from "@/lib/auth.functions";
-import { ALLOWED_EMAIL_DOMAINS, emailDomainAllowed } from "@/lib/auth-config";
+import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import logo from "@/assets/alyson-logo.svg.asset.json";
+
+const ALLOWED = "cintara.ai";
+const isAllowed = (email?: string | null) =>
+  (email ?? "").trim().toLowerCase().split("@")[1] === ALLOWED;
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Sign in — Alyson Domain Platform" },
+      { name: "description", content: "Sign in to Alyson with your Cintara Google account." },
+      { property: "og:title", content: "Sign in — Alyson Domain Platform" },
+      { property: "og:description", content: "Sign in to Alyson with your Cintara Google account." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const signUp = useServerFn(signUpWithDomainCheck);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard" });
+    const check = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      if (isAllowed(data.user.email)) navigate({ to: "/dashboard" });
+      else {
+        await supabase.auth.signOut();
+        setErr("Only @cintara.ai Google accounts can access this platform.");
+      }
+    };
+    check();
+    const { data: sub } = supabase.auth.onAuthStateChange((e) => {
+      if (e === "SIGNED_IN") check();
     });
+    const qs = new URLSearchParams(window.location.hash.slice(1) + "&" + window.location.search.slice(1));
+    if (qs.get("error_description")) setErr("Only @cintara.ai Google accounts can access this platform.");
+    return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function signIn() {
     setErr(null);
-    if (!emailDomainAllowed(email)) {
-      setErr(`Email must end with ${ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(" or ")}`);
+    setBusy(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin + "/auth",
+      extraParams: { hd: ALLOWED, prompt: "select_account" },
+    });
+    if (result.error) {
+      setErr("Only @cintara.ai Google accounts can access this platform.");
+      setBusy(false);
       return;
     }
-    setBusy(true);
-    try {
-      if (mode === "signup") {
-        await signUp({ data: { email, password } });
-      }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      navigate({ to: "/dashboard" });
-    } catch (e: any) {
-      setErr(e?.message ?? "Authentication failed");
-    } finally {
-      setBusy(false);
-    }
+    if (result.redirected) return;
+    setBusy(false);
   }
 
   return (
@@ -59,57 +72,19 @@ function AuthPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Alyson</h1>
           <p className="text-sm text-muted-foreground">Domain Management Platform</p>
         </div>
-
-        <div className="rounded-xl border border-border bg-card shadow-card p-6">
-          <div className="flex gap-1 p-1 rounded-lg bg-muted mb-5">
-            {(["signin", "signup"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={`flex-1 text-sm font-medium rounded-md py-1.5 transition-colors ${
-                  mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-                }`}
-              >
-                {m === "signin" ? "Sign in" : "Sign up"}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Work email</Label>
-              <Input id="email" type="email" required value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@cintara.ai" autoComplete="email" />
+        <div className="rounded-xl border border-border bg-card shadow-card p-6 space-y-4">
+          <Button onClick={signIn} disabled={busy} className="w-full">
+            {busy ? "Redirecting…" : "Continue with Google"}
+          </Button>
+          {err && (
+            <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2">
+              {err}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required minLength={8} value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete={mode === "signin" ? "current-password" : "new-password"} />
-            </div>
-
-            {err && (
-              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2">
-                {err}
-              </div>
-            )}
-
-            <Button type="submit" disabled={busy} className="w-full">
-              {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-            </Button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Access restricted to {ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(" and ")} email addresses.
-            </p>
-          </form>
+          )}
+          <p className="text-xs text-muted-foreground text-center">
+            Access restricted to @{ALLOWED} Google Workspace accounts.
+          </p>
         </div>
-
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          <Link to="/" className="hover:underline">← Back to home</Link>
-        </p>
       </div>
     </div>
   );

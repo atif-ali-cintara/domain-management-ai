@@ -9,6 +9,10 @@ export const Route = createFileRoute("/_app")({
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
     }
+    if ((data.user.email ?? "").toLowerCase().split("@")[1] !== "cintara.ai") {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth" });
+    }
     return { user: data.user };
   },
   component: AppShell,
