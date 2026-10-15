@@ -219,11 +219,20 @@ async function loadNamecheap(acc: DomainManagerResult["accounts"]) {
 
 export const getManagedDomains = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { refresh?: boolean } | undefined) => d ?? {})
+  .inputValidator((d: { refresh?: boolean } | undefined) => d ?? ({} as { refresh?: boolean }))
   .handler(async ({ data }): Promise<DomainManagerResult> => {
     if (!data.refresh && cache && Date.now() - cache.at < TTL) return cache.data;
     const accounts: DomainManagerResult["accounts"] = [];
     const [gd, nc] = await Promise.all([loadGoDaddy(accounts), loadNamecheap(accounts)]);
+    for (const a of NAMECHEAP_NO_API) {
+      accounts.push({
+        registrar: "Namecheap",
+        account: `Namecheap - ${a.domain} (${a.username})`,
+        ok: false,
+        count: 0,
+        message: "No API access — Namecheap spend threshold not met",
+      });
+    }
     if (!process.env.ONEOONE_DOMAINS_API_KEY) {
       accounts.push({ registrar: "101domains", account: "—", ok: false, count: 0, message: "Not connected — API key needed" });
     }
