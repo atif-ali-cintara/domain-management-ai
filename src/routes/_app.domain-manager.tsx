@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUpDown, Download, RefreshCw } from "lucide-react";
+import { ArrowUpDown, CheckCircle2, Download, RefreshCw, XCircle } from "lucide-react";
 import { getManagedDomains, type ManagedDomain } from "@/lib/domain-manager.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
