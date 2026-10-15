@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type SortKey = keyof Pick<ManagedDomain, "domain" | "registrar" | "accountName" | "accountUsername" | "contactEmail" | "expires" | "status">;
@@ -25,7 +26,11 @@ function DomainManagerPage() {
   const [account, setAccount] = useState("all");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "expires", dir: 1 });
 
-  const all = data?.domains ?? [];
+  const [showExpired, setShowExpired] = useState(false);
+  const isExpired = (d: ManagedDomain) => d.status.toUpperCase() === "EXPIRED" || (d.expiresInDays != null && d.expiresInDays < 0);
+  const everything = data?.domains ?? [];
+  const all = useMemo(() => everything.filter((d) => !isExpired(d)), [everything]);
+  const expired = useMemo(() => everything.filter(isExpired).sort((a, b) => (b.expires ?? "").localeCompare(a.expires ?? "")), [everything]);
   const accountsList = useMemo(() => [...new Set(all.map((d) => d.accountName))].sort(), [all]);
 
   const rows = useMemo(() => {
@@ -49,9 +54,9 @@ function DomainManagerPage() {
   }
 
   function exportCsv() {
-    const head = ["Domain", "Registrar", "Account name", "Account username", "Contact email", "Expires", "Days left", "Status", "Auto-renew"];
+    const head = ["Domain", "Registrar", "Account name", "Account username", "Contact email", "Expires", "Days left", "Status", "Auto-renew", "Privacy"];
     const lines = rows.map((d) =>
-      [d.domain, d.registrar, d.accountName, d.accountUsername, d.contactEmail ?? "", d.expires?.slice(0, 10) ?? "", d.expiresInDays ?? "", d.status, d.autoRenew ? "yes" : "no"]
+      [d.domain, d.registrar, d.accountName, d.accountUsername, d.contactEmail ?? "", d.expires?.slice(0, 10) ?? "", d.expiresInDays ?? "", d.status, d.autoRenew ? "yes" : "no", d.privacy == null ? "" : d.privacy ? "on" : "off"]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(","),
     );
@@ -121,6 +126,7 @@ function DomainManagerPage() {
               <H k="expires">Expires</H>
               <H k="status">Status</H>
               <TableHead>Auto-renew</TableHead>
+              <TableHead>Privacy</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,11 +146,12 @@ function DomainManagerPage() {
                   </TableCell>
                   <TableCell><Badge variant={d.status === "ACTIVE" ? "secondary" : "outline"}>{d.status}</Badge></TableCell>
                   <TableCell className="text-sm">{d.autoRenew ? "On" : <span className="text-destructive">Off</span>}</TableCell>
+                  <TableCell className="text-sm">{d.privacy == null ? <span className="text-muted-foreground">—</span> : d.privacy ? "On" : "Off"}</TableCell>
                 </TableRow>
               );
             })}
             {!isLoading && !rows.length && (
-              <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">No domains found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-10">No domains found.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -207,6 +214,48 @@ function DomainManagerPage() {
           </div>
         );
       })()}
+
+      <Card className="p-4">
+        <label className="flex cursor-pointer items-center justify-between gap-3">
+          <span>
+            <span className="text-sm font-semibold">Show expired domains</span>
+            <span className="ml-2 text-xs text-muted-foreground">{expired.length} expired, hidden from the list above</span>
+          </span>
+          <Switch checked={showExpired} onCheckedChange={setShowExpired} />
+        </label>
+        {showExpired && (
+          <div className="mt-4">
+            {expired.length ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Domain</TableHead>
+                    <TableHead>Registrar</TableHead>
+                    <TableHead>Account name</TableHead>
+                    <TableHead>Contact email</TableHead>
+                    <TableHead>Expired on</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expired.map((d) => (
+                    <TableRow key={"x" + d.registrar + d.domain}>
+                      <TableCell className="font-mono text-xs">{d.domain}</TableCell>
+                      <TableCell>{d.registrar}</TableCell>
+                      <TableCell className="text-sm">{d.accountName}</TableCell>
+                      <TableCell className="text-sm">{d.contactEmail ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-destructive">{d.expires ? d.expires.slice(0, 10) : "—"}</TableCell>
+                      <TableCell><Badge variant="outline">{d.status}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground">No expired domains.</p>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

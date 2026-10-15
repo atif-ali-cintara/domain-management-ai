@@ -12,7 +12,17 @@ export type ManagedDomain = {
   expiresInDays: number | null;
   status: string;
   autoRenew: boolean;
+  privacy?: boolean;
 };
+
+// 101domain account domains (entered manually until API access is set up).
+const ONEOONE_MANUAL: [string, string][] = [
+  ["breadbox.ai", "2027-08-04"],
+  ["kijker.ai", "2027-01-26"],
+  ["mainspring.ai", "2027-01-26"],
+  ["palisade.ai", "2027-01-29"],
+  ["perimeter.ai", "2027-08-05"],
+];
 
 export type DomainManagerResult = {
   domains: ManagedDomain[];
@@ -248,11 +258,30 @@ export const getManagedDomains = createServerFn({ method: "POST" })
         message: "No API access — Namecheap spend threshold not met",
       });
     }
-    if (!process.env.ONEOONE_DOMAINS_API_KEY) {
-      accounts.push({ registrar: "101domains", account: "—", ok: false, count: 0, message: "Not connected — API key needed" });
-    }
+    const od: ManagedDomain[] = ONEOONE_MANUAL.map(([domain, exp]) => {
+      const expires = new Date(exp + "T00:00:00Z").toISOString();
+      return {
+        domain,
+        registrar: "101domains" as const,
+        accountUsername: "bill@twiceverified.com",
+        accountName: "101domain - Main AI Domains",
+        contactEmail: "bill@twiceverified.com",
+        expires,
+        expiresInDays: days(expires),
+        status: "ACTIVE",
+        autoRenew: true,
+        privacy: true,
+      };
+    });
+    accounts.push({
+      registrar: "101domains",
+      account: "101domain - Main AI Domains (bill@twiceverified.com)",
+      ok: false,
+      count: od.length,
+      message: `${od.length} domains added manually — no API key yet`,
+    });
     const seen = new Set<string>();
-    const domains = [...nc, ...gd].filter((d) => {
+    const domains = [...nc, ...gd, ...od].filter((d) => {
       const k = d.domain.toLowerCase();
       if (seen.has(k)) return false;
       seen.add(k);
