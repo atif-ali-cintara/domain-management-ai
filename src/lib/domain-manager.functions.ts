@@ -24,7 +24,6 @@ export type DomainManagerResult = {
 const NAMECHEAP_NO_API: { domain: string; username: string }[] = [
   { domain: "revxhomeservices.com", username: "subtainrevX" },
   { domain: "peopleamplify.com", username: "abdullahr98" },
-  { domain: "Better People Ops", username: "ahsanraza001" },
   { domain: "betterpeoplesupport.com", username: "aliraza908" },
   { domain: "growthrethink.com", username: "maheenfaisal2f" },
   { domain: "trackinglinktech.com", username: "kamranmalik22" },
