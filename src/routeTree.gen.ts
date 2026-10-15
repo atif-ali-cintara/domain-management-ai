@@ -9,104 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppUsageRouteImport } from './routes/_app.usage'
-import { Route as AppTasksRouteImport } from './routes/_app.tasks'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
-import { Route as AppReportsRouteImport } from './routes/_app.reports'
-import { Route as AppRegistrarsRouteImport } from './routes/_app.registrars'
-import { Route as AppPaymentMethodsRouteImport } from './routes/_app.payment-methods'
-import { Route as AppImportExportRouteImport } from './routes/_app.import-export'
-import { Route as AppIdentitiesRouteImport } from './routes/_app.identities'
-import { Route as AppHunterRouteImport } from './routes/_app.hunter'
-import { Route as AppDomainsRouteImport } from './routes/_app.domains'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolidated-email'
-import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
-import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppAccountAccessRouteImport } from './routes/_app.account-access'
+import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
+import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
+import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolidated-email'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppDomainsRouteImport } from './routes/_app.domains'
+import { Route as AppHunterRouteImport } from './routes/_app.hunter'
+import { Route as AppIdentitiesRouteImport } from './routes/_app.identities'
+import { Route as AppImportExportRouteImport } from './routes/_app.import-export'
+import { Route as AppPaymentMethodsRouteImport } from './routes/_app.payment-methods'
+import { Route as AppRegistrarsRouteImport } from './routes/_app.registrars'
+import { Route as AppReportsRouteImport } from './routes/_app.reports'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppTasksRouteImport } from './routes/_app.tasks'
+import { Route as AppUsageRouteImport } from './routes/_app.usage'
 import { Route as ShareHuntTokenRouteImport } from './routes/share.hunt.$token'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppUsageRoute = AppUsageRouteImport.update({
-  id: '/usage',
-  path: '/usage',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTasksRoute = AppTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRegistrarsRoute = AppRegistrarsRouteImport.update({
-  id: '/registrars',
-  path: '/registrars',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPaymentMethodsRoute = AppPaymentMethodsRouteImport.update({
-  id: '/payment-methods',
-  path: '/payment-methods',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppImportExportRoute = AppImportExportRouteImport.update({
-  id: '/import-export',
-  path: '/import-export',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppIdentitiesRoute = AppIdentitiesRouteImport.update({
-  id: '/identities',
-  path: '/identities',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppHunterRoute = AppHunterRouteImport.update({
-  id: '/hunter',
-  path: '/hunter',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDomainsRoute = AppDomainsRouteImport.update({
-  id: '/domains',
-  path: '/domains',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppConsolidatedEmailRoute = AppConsolidatedEmailRouteImport.update({
-  id: '/consolidated-email',
-  path: '/consolidated-email',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCompaniesRoute = AppCompaniesRouteImport.update({
-  id: '/companies',
-  path: '/companies',
+const AppAccountAccessRoute = AppAccountAccessRouteImport.update({
+  id: '/account-access',
+  path: '/account-access',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAuditLogRoute = AppAuditLogRouteImport.update({
@@ -114,9 +54,69 @@ const AppAuditLogRoute = AppAuditLogRouteImport.update({
   path: '/audit-log',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAccountAccessRoute = AppAccountAccessRouteImport.update({
-  id: '/account-access',
-  path: '/account-access',
+const AppCompaniesRoute = AppCompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConsolidatedEmailRoute = AppConsolidatedEmailRouteImport.update({
+  id: '/consolidated-email',
+  path: '/consolidated-email',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDomainsRoute = AppDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHunterRoute = AppHunterRouteImport.update({
+  id: '/hunter',
+  path: '/hunter',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIdentitiesRoute = AppIdentitiesRouteImport.update({
+  id: '/identities',
+  path: '/identities',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppImportExportRoute = AppImportExportRouteImport.update({
+  id: '/import-export',
+  path: '/import-export',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPaymentMethodsRoute = AppPaymentMethodsRouteImport.update({
+  id: '/payment-methods',
+  path: '/payment-methods',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRegistrarsRoute = AppRegistrarsRouteImport.update({
+  id: '/registrars',
+  path: '/registrars',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsageRoute = AppUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
   getParentRoute: () => AppRoute,
 } as any)
 const ShareHuntTokenRoute = ShareHuntTokenRouteImport.update({
@@ -272,11 +272,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -286,102 +286,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/usage': {
-      id: '/_app/usage'
-      path: '/usage'
-      fullPath: '/usage'
-      preLoaderRoute: typeof AppUsageRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tasks': {
-      id: '/_app/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof AppTasksRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reports': {
-      id: '/_app/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/registrars': {
-      id: '/_app/registrars'
-      path: '/registrars'
-      fullPath: '/registrars'
-      preLoaderRoute: typeof AppRegistrarsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/payment-methods': {
-      id: '/_app/payment-methods'
-      path: '/payment-methods'
-      fullPath: '/payment-methods'
-      preLoaderRoute: typeof AppPaymentMethodsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/import-export': {
-      id: '/_app/import-export'
-      path: '/import-export'
-      fullPath: '/import-export'
-      preLoaderRoute: typeof AppImportExportRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/identities': {
-      id: '/_app/identities'
-      path: '/identities'
-      fullPath: '/identities'
-      preLoaderRoute: typeof AppIdentitiesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/hunter': {
-      id: '/_app/hunter'
-      path: '/hunter'
-      fullPath: '/hunter'
-      preLoaderRoute: typeof AppHunterRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/domains': {
-      id: '/_app/domains'
-      path: '/domains'
-      fullPath: '/domains'
-      preLoaderRoute: typeof AppDomainsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/consolidated-email': {
-      id: '/_app/consolidated-email'
-      path: '/consolidated-email'
-      fullPath: '/consolidated-email'
-      preLoaderRoute: typeof AppConsolidatedEmailRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/companies': {
-      id: '/_app/companies'
-      path: '/companies'
-      fullPath: '/companies'
-      preLoaderRoute: typeof AppCompaniesRouteImport
+    '/_app/account-access': {
+      id: '/_app/account-access'
+      path: '/account-access'
+      fullPath: '/account-access'
+      preLoaderRoute: typeof AppAccountAccessRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/audit-log': {
@@ -391,11 +307,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditLogRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/account-access': {
-      id: '/_app/account-access'
-      path: '/account-access'
-      fullPath: '/account-access'
-      preLoaderRoute: typeof AppAccountAccessRouteImport
+    '/_app/companies': {
+      id: '/_app/companies'
+      path: '/companies'
+      fullPath: '/companies'
+      preLoaderRoute: typeof AppCompaniesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/consolidated-email': {
+      id: '/_app/consolidated-email'
+      path: '/consolidated-email'
+      fullPath: '/consolidated-email'
+      preLoaderRoute: typeof AppConsolidatedEmailRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/domains': {
+      id: '/_app/domains'
+      path: '/domains'
+      fullPath: '/domains'
+      preLoaderRoute: typeof AppDomainsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/hunter': {
+      id: '/_app/hunter'
+      path: '/hunter'
+      fullPath: '/hunter'
+      preLoaderRoute: typeof AppHunterRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/identities': {
+      id: '/_app/identities'
+      path: '/identities'
+      fullPath: '/identities'
+      preLoaderRoute: typeof AppIdentitiesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/import-export': {
+      id: '/_app/import-export'
+      path: '/import-export'
+      fullPath: '/import-export'
+      preLoaderRoute: typeof AppImportExportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/payment-methods': {
+      id: '/_app/payment-methods'
+      path: '/payment-methods'
+      fullPath: '/payment-methods'
+      preLoaderRoute: typeof AppPaymentMethodsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/registrars': {
+      id: '/_app/registrars'
+      path: '/registrars'
+      fullPath: '/registrars'
+      preLoaderRoute: typeof AppRegistrarsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks': {
+      id: '/_app/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/usage': {
+      id: '/_app/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AppUsageRouteImport
       parentRoute: typeof AppRoute
     }
     '/share/hunt/$token': {
