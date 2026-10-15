@@ -149,6 +149,64 @@ function DomainManagerPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {data && (() => {
+        const connected = data.accounts.filter((a) => a.ok);
+        const notConnected = data.accounts.filter((a) => !a.ok);
+        const totalDomains = connected.reduce((s, a) => s + a.count, 0);
+        return (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[color:var(--status-success,theme(colors.emerald.600))]" />
+                <h2 className="text-sm font-semibold">API connected</h2>
+                <Badge variant="secondary" className="ml-auto">{connected.length} account{connected.length === 1 ? "" : "s"}</Badge>
+              </div>
+              {connected.length ? (
+                <ul className="space-y-1.5 text-sm">
+                  {connected.map((a, i) => (
+                    <li key={i} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-1.5 last:border-0 last:pb-0">
+                      <span>
+                        <span className="font-medium">{a.registrar}</span>
+                        <span className="text-muted-foreground"> · {a.account}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {a.count} domain{a.count === 1 ? "" : "s"}
+                        {a.message && <span className="ml-1">({a.message})</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No accounts connected yet.</p>
+              )}
+              <p className="mt-3 text-xs text-muted-foreground">{totalDomains} domains pulled from connected accounts.</p>
+            </Card>
+            <Card className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Not connected</h2>
+                <Badge variant="outline" className="ml-auto">{notConnected.length} account{notConnected.length === 1 ? "" : "s"}</Badge>
+              </div>
+              {notConnected.length ? (
+                <ul className="space-y-1.5 text-sm">
+                  {notConnected.map((a, i) => (
+                    <li key={i} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-1.5 last:border-0 last:pb-0">
+                      <span>
+                        <span className="font-medium">{a.registrar}</span>
+                        <span className="text-muted-foreground"> · {a.account}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">{a.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">All accounts are connected.</p>
+              )}
+            </Card>
+          </div>
+        );
+      })()}
     </div>
   );
 }
