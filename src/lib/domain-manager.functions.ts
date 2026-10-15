@@ -194,7 +194,11 @@ async function loadNamecheap(acc: DomainManagerResult["accounts"]) {
   const creds: [string, string][] = [];
   const e = process.env;
   if (e.NAMECHEAP_API_USER && e.NAMECHEAP_API_KEY) creds.push([e.NAMECHEAP_API_USER, e.NAMECHEAP_API_KEY]);
-  if (e.NAMECHEAP_API_USER_2 && e.NAMECHEAP_API_KEY_2) creds.push([e.NAMECHEAP_API_USER_2, e.NAMECHEAP_API_KEY_2]);
+  for (let n = 2; n <= 20; n++) {
+    const u = e[`NAMECHEAP_API_USER_${n}`];
+    const k = e[`NAMECHEAP_API_KEY_${n}`];
+    if (u && k) creds.push([u, k]);
+  }
   if (!creds.length) {
     acc.push({ registrar: "Namecheap", account: "—", ok: false, count: 0, message: "Not connected" });
     return [];

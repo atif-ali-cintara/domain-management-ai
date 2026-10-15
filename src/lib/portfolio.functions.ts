@@ -192,12 +192,10 @@ async function fetchNamecheap(): Promise<{ list: NcDomainWithAccount[]; errors: 
       apiUser: process.env.NAMECHEAP_API_USER,
     });
   }
-  if (process.env.NAMECHEAP_API_KEY_2 && process.env.NAMECHEAP_API_USER_2) {
-    accounts.push({
-      label: `Namecheap (${process.env.NAMECHEAP_API_USER_2})`,
-      apiKey: process.env.NAMECHEAP_API_KEY_2,
-      apiUser: process.env.NAMECHEAP_API_USER_2,
-    });
+  for (let n = 2; n <= 20; n++) {
+    const apiKey = process.env[`NAMECHEAP_API_KEY_${n}`];
+    const apiUser = process.env[`NAMECHEAP_API_USER_${n}`];
+    if (apiKey && apiUser) accounts.push({ label: `Namecheap (${apiUser})`, apiKey, apiUser });
   }
   if (accounts.length === 0) return { list: [], errors: ["Namecheap credentials missing"] };
   const ip = await getClientIp();
