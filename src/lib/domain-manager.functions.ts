@@ -19,6 +19,21 @@ export type DomainManagerResult = {
   fetchedAt: string;
 };
 
+// Namecheap accounts that Namecheap hasn't granted API access to (spend threshold not met).
+// Listed so they're tracked in Domain Manager; their domains can't be pulled automatically.
+const NAMECHEAP_NO_API: { domain: string; username: string }[] = [
+  { domain: "revxhomeservices.com", username: "subtainrevX" },
+  { domain: "peopleamplify.com", username: "abdullahr98" },
+  { domain: "Better People Ops", username: "ahsanraza001" },
+  { domain: "betterpeoplesupport.com", username: "aliraza908" },
+  { domain: "growthrethink.com", username: "maheenfaisal2f" },
+  { domain: "trackinglinktech.com", username: "kamranmalik22" },
+  { domain: "Hownerly Nexa", username: "muhammaddanish33789" },
+  { domain: "curbnexa.com", username: "Iqraworkspace" },
+  { domain: "Hearth Vero", username: "rabiaimran5424" },
+  { domain: "curblymint.com", username: "kalsoom538452" },
+];
+
 let cache: { at: number; data: DomainManagerResult } | null = null;
 const TTL = 10 * 60_000;
 
@@ -219,11 +234,20 @@ async function loadNamecheap(acc: DomainManagerResult["accounts"]) {
 
 export const getManagedDomains = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { refresh?: boolean } | undefined) => d ?? {})
+  .inputValidator((d: { refresh?: boolean } | undefined) => d ?? ({} as { refresh?: boolean }))
   .handler(async ({ data }): Promise<DomainManagerResult> => {
     if (!data.refresh && cache && Date.now() - cache.at < TTL) return cache.data;
     const accounts: DomainManagerResult["accounts"] = [];
     const [gd, nc] = await Promise.all([loadGoDaddy(accounts), loadNamecheap(accounts)]);
+    for (const a of NAMECHEAP_NO_API) {
+      accounts.push({
+        registrar: "Namecheap",
+        account: `Namecheap - ${a.domain} (${a.username})`,
+        ok: false,
+        count: 0,
+        message: "No API access — Namecheap spend threshold not met",
+      });
+    }
     if (!process.env.ONEOONE_DOMAINS_API_KEY) {
       accounts.push({ registrar: "101domains", account: "—", ok: false, count: 0, message: "Not connected — API key needed" });
     }
