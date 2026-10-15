@@ -93,18 +93,6 @@ function DomainManagerPage() {
         </div>
       </div>
 
-      {data && (
-        <div className="flex flex-wrap gap-2 text-xs">
-          {data.accounts.map((a, i) => (
-            <div key={i} className="rounded-md border border-border bg-card px-2.5 py-1.5">
-              <span className="font-medium">{a.registrar}</span>
-              <span className="text-muted-foreground"> · {a.account} · </span>
-              {a.ok ? <span>{a.count} domains</span> : <span className="text-destructive">{a.message}</span>}
-              {a.ok && a.message && <span className="text-muted-foreground"> ({a.message})</span>}
-            </div>
-          ))}
-        </div>
-      )}
       {error && <div className="text-sm text-destructive">{(error as Error).message}</div>}
 
       <div className="flex flex-wrap gap-2">
