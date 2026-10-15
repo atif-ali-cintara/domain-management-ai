@@ -16,6 +16,23 @@ export type ManagedDomain = {
 export type DomainManagerResult = {
   domains: ManagedDomain[];
   accounts: { registrar: string; account: string; ok: boolean; count: number; message?: string }[];
+};
+
+// Namecheap accounts that Namecheap hasn't granted API access to (spend threshold not met).
+// Listed so they're tracked in Domain Manager; their domains can't be pulled automatically.
+const NAMECHEAP_NO_API: { domain: string; username: string }[] = [
+  { domain: "revxhomeservices.com", username: "subtainrevX" },
+  { domain: "peopleamplify.com", username: "abdullahr98" },
+  { domain: "Better People Ops", username: "ahsanraza001" },
+  { domain: "betterpeoplesupport.com", username: "aliraza908" },
+  { domain: "growthrethink.com", username: "maheenfaisal2f" },
+  { domain: "trackinglinktech.com", username: "kamranmalik22" },
+  { domain: "Hownerly Nexa", username: "muhammaddanish33789" },
+  { domain: "curbnexa.com", username: "Iqraworkspace" },
+  { domain: "Hearth Vero", username: "rabiaimran5424" },
+  { domain: "curblymint.com", username: "kalsoom538452" },
+];
+type _Unused = {
   fetchedAt: string;
 };
 
