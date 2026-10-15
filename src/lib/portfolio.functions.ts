@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { companies, domains as csvDomains, identities } from "./migration-data";
+import { fixBrandCasing } from "@/lib/dmd/brand";
 
 export type PortfolioDomain = {
   domain: string;
@@ -187,7 +188,7 @@ async function fetchNamecheap(): Promise<{ list: NcDomainWithAccount[]; errors: 
   const accounts: NcAccount[] = [];
   if (process.env.NAMECHEAP_API_KEY && process.env.NAMECHEAP_API_USER) {
     accounts.push({
-      label: `Revcloud (${process.env.NAMECHEAP_API_USER})`,
+      label: fixBrandCasing(`Revcloud (${process.env.NAMECHEAP_API_USER})`),
       apiKey: process.env.NAMECHEAP_API_KEY,
       apiUser: process.env.NAMECHEAP_API_USER,
     });
@@ -195,7 +196,7 @@ async function fetchNamecheap(): Promise<{ list: NcDomainWithAccount[]; errors: 
   for (let n = 2; n <= 20; n++) {
     const apiKey = process.env[`NAMECHEAP_API_KEY_${n}`];
     const apiUser = process.env[`NAMECHEAP_API_USER_${n}`];
-    if (apiKey && apiUser) accounts.push({ label: `Namecheap (${apiUser})`, apiKey, apiUser });
+    if (apiKey && apiUser) accounts.push({ label: fixBrandCasing(`Namecheap (${apiUser})`), apiKey, apiUser });
   }
   if (accounts.length === 0) return { list: [], errors: ["Namecheap credentials missing"] };
   const ip = await getClientIp();
