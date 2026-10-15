@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fixBrandCasing } from "@/lib/dmd/brand";
 
 export type ManagedDomain = {
   domain: string;
@@ -118,11 +119,11 @@ async function loadGoDaddy(acc: DomainManagerResult["accounts"]): Promise<Manage
   const e = process.env;
   const creds: { key: string; secret: string; name: string }[] = [];
   if (e.GODADDY_API_KEY && e.GODADDY_API_SECRET)
-    creds.push({ key: e.GODADDY_API_KEY, secret: e.GODADDY_API_SECRET, name: e.GODADDY_ACCOUNT_NAME || "GoDaddy Main" });
+    creds.push({ key: e.GODADDY_API_KEY, secret: e.GODADDY_API_SECRET, name: fixBrandCasing(e.GODADDY_ACCOUNT_NAME || "GoDaddy Main") });
   for (let n = 2; n <= 20; n++) {
     const k = e[`GODADDY_API_KEY_${n}`];
     const s = e[`GODADDY_API_SECRET_${n}`];
-    if (k && s) creds.push({ key: k, secret: s, name: e[`GODADDY_ACCOUNT_NAME_${n}`] || `GoDaddy Account ${n}` });
+    if (k && s) creds.push({ key: k, secret: s, name: fixBrandCasing(e[`GODADDY_ACCOUNT_NAME_${n}`] || `GoDaddy Account ${n}`) });
   }
   if (!creds.length) {
     acc.push({ registrar: "GoDaddy", account: "—", ok: false, count: 0, message: "Not connected" });
@@ -211,11 +212,11 @@ async function loadNamecheapAccount(
 async function loadNamecheap(acc: DomainManagerResult["accounts"]) {
   const creds: [string, string, string][] = [];
   const e = process.env;
-  if (e.NAMECHEAP_API_USER && e.NAMECHEAP_API_KEY) creds.push([e.NAMECHEAP_API_USER, e.NAMECHEAP_API_KEY, e.NAMECHEAP_ACCOUNT_NAME || e.NAMECHEAP_API_USER]);
+  if (e.NAMECHEAP_API_USER && e.NAMECHEAP_API_KEY) creds.push([e.NAMECHEAP_API_USER, e.NAMECHEAP_API_KEY, fixBrandCasing(e.NAMECHEAP_ACCOUNT_NAME || e.NAMECHEAP_API_USER)]);
   for (let n = 2; n <= 20; n++) {
     const u = e[`NAMECHEAP_API_USER_${n}`];
     const k = e[`NAMECHEAP_API_KEY_${n}`];
-    if (u && k) creds.push([u, k, e[`NAMECHEAP_ACCOUNT_NAME_${n}`] || u]);
+    if (u && k) creds.push([u, k, fixBrandCasing(e[`NAMECHEAP_ACCOUNT_NAME_${n}`] || u)]);
   }
   if (!creds.length) {
     acc.push({ registrar: "Namecheap", account: "—", ok: false, count: 0, message: "Not connected" });
