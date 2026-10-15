@@ -29,6 +29,7 @@ type NavItem = { to: string; label: string; icon: ComponentType<SVGProps<SVGSVGE
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/domains", label: "Domains", icon: Globe },
+  { to: "/domain-manager", label: "Domain Manager", icon: Globe },
   { to: "/hunter", label: "Domain Hunter", icon: Sparkles },
   { to: "/identities", label: "Identities", icon: Users },
   { to: "/companies", label: "Companies", icon: Building2 },
