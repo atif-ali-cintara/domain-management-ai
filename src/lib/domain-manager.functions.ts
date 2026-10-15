@@ -16,6 +16,7 @@ export type ManagedDomain = {
 export type DomainManagerResult = {
   domains: ManagedDomain[];
   accounts: { registrar: string; account: string; ok: boolean; count: number; message?: string }[];
+  fetchedAt: string;
 };
 
 // Namecheap accounts that Namecheap hasn't granted API access to (spend threshold not met).
@@ -32,9 +33,6 @@ const NAMECHEAP_NO_API: { domain: string; username: string }[] = [
   { domain: "Hearth Vero", username: "rabiaimran5424" },
   { domain: "curblymint.com", username: "kalsoom538452" },
 ];
-type _Unused = {
-  fetchedAt: string;
-};
 
 let cache: { at: number; data: DomainManagerResult } | null = null;
 const TTL = 10 * 60_000;
