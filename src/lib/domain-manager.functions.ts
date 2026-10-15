@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fixBrandCasing } from "@/lib/dmd/brand";
+import { SHEET_DOMAINS } from "@/lib/dmd/domain-sheet";
 
 export type ManagedDomain = {
   domain: string;
@@ -15,16 +16,8 @@ export type ManagedDomain = {
   privacy?: boolean;
   importance?: string;
   category?: string;
+  source?: "api" | "sheet";
 };
-
-// 101domain account domains (entered manually until API access is set up).
-const ONEOONE_MANUAL: [string, string][] = [
-  ["breadbox.ai", "2027-08-04"],
-  ["kijker.ai", "2027-01-26"],
-  ["mainspring.ai", "2027-01-26"],
-  ["palisade.ai", "2027-01-29"],
-  ["perimeter.ai", "2027-08-05"],
-];
 
 export type DomainManagerResult = {
   domains: ManagedDomain[];
@@ -260,37 +253,49 @@ export const getManagedDomains = createServerFn({ method: "POST" })
         message: "No API access — Namecheap spend threshold not met",
       });
     }
-    const od: ManagedDomain[] = ONEOONE_MANUAL.map(([domain, exp]) => {
-      const expires = new Date(exp + "T00:00:00Z").toISOString();
-      return {
-        domain,
-        registrar: "101domains" as const,
-        accountUsername: "bill@twiceverified.com",
-        accountName: "101domain - Main AI Domains",
-        contactEmail: "bill@twiceverified.com",
+    const live = new Map<string, ManagedDomain>();
+    for (const d of [...nc, ...gd]) {
+      const k = d.domain.toLowerCase();
+      if (!live.has(k)) live.set(k, { ...d, source: "api" });
+    }
+    const added: ManagedDomain[] = [];
+    let oneCount = 0;
+    for (const s of SHEET_DOMAINS) {
+      const ex = live.get(s.domain);
+      const accountName = fixBrandCasing(s.accountName || s.username || s.registrar);
+      if (ex) {
+        ex.importance ??= s.importance ?? undefined;
+        ex.category ??= s.category ?? undefined;
+        ex.privacy ??= s.privacy ?? undefined;
+        ex.contactEmail ??= s.email;
+        continue;
+      }
+      if (s.registrar === "101domains") oneCount++;
+      const expires = s.expires ? new Date(s.expires + "T00:00:00Z").toISOString() : null;
+      added.push({
+        domain: s.domain,
+        registrar: s.registrar,
+        accountUsername: s.username || "—",
+        accountName,
+        contactEmail: s.email,
         expires,
         expiresInDays: days(expires),
-        status: "ACTIVE",
-        autoRenew: true,
-        privacy: true,
-        importance: "Important",
-        category: "Critical",
-      };
-    });
+        status: s.status.toUpperCase(),
+        autoRenew: !!s.autoRenew,
+        privacy: s.privacy ?? undefined,
+        importance: s.importance ?? undefined,
+        category: s.category ?? undefined,
+        source: "sheet",
+      });
+    }
     accounts.push({
       registrar: "101domains",
       account: "101domain - Main AI Domains (bill@twiceverified.com)",
       ok: false,
-      count: od.length,
-      message: `${od.length} domains added manually — no API key yet`,
+      count: oneCount,
+      message: `${oneCount} domains added from your sheet — no API key yet`,
     });
-    const seen = new Set<string>();
-    const domains = [...nc, ...gd, ...od].filter((d) => {
-      const k = d.domain.toLowerCase();
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+    const domains = [...live.values(), ...added];
     const result = { domains, accounts, fetchedAt: new Date().toISOString() };
     cache = { at: Date.now(), data: result };
     return result;
