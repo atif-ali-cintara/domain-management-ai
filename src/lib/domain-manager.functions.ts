@@ -5,6 +5,7 @@ export type ManagedDomain = {
   domain: string;
   registrar: "GoDaddy" | "Namecheap" | "101domains";
   accountUsername: string;
+  accountName: string;
   contactEmail: string | null;
   expires: string | null;
   expiresInDays: number | null;
@@ -81,6 +82,7 @@ async function loadGoDaddyAccount(
       domain: g.domain,
       registrar: "GoDaddy" as const,
       accountUsername: account,
+      accountName: account,
       contactEmail: email,
       expires,
       expiresInDays: days(expires),
@@ -134,6 +136,7 @@ async function loadNamecheapAccount(
   apiKey: string,
   ip: string,
   acc: DomainManagerResult["accounts"],
+  name: string = apiUser,
 ): Promise<ManagedDomain[]> {
   const base = (cmd: string) => {
     const u = new URL("https://api.namecheap.com/xml.response");
@@ -160,7 +163,7 @@ async function loadNamecheapAccount(
       if (batch.length < 100) break;
     }
   } catch (e) {
-    acc.push({ registrar: "Namecheap", account: apiUser, ok: false, count: 0, message: (e as Error).message });
+    acc.push({ registrar: "Namecheap", account: name, ok: false, count: 0, message: (e as Error).message });
     return [];
   }
   const out = await mapLimit(rows, 3, async (a) => {
@@ -179,6 +182,7 @@ async function loadNamecheapAccount(
       domain: a.Name,
       registrar: "Namecheap" as const,
       accountUsername: apiUser,
+      accountName: name,
       contactEmail: email,
       expires,
       expiresInDays: days(expires),
@@ -186,18 +190,18 @@ async function loadNamecheapAccount(
       autoRenew: a.AutoRenew === "true",
     };
   });
-  acc.push({ registrar: "Namecheap", account: apiUser, ok: true, count: out.length });
+  acc.push({ registrar: "Namecheap", account: name, ok: true, count: out.length });
   return out;
 }
 
 async function loadNamecheap(acc: DomainManagerResult["accounts"]) {
-  const creds: [string, string][] = [];
+  const creds: [string, string, string][] = [];
   const e = process.env;
-  if (e.NAMECHEAP_API_USER && e.NAMECHEAP_API_KEY) creds.push([e.NAMECHEAP_API_USER, e.NAMECHEAP_API_KEY]);
+  if (e.NAMECHEAP_API_USER && e.NAMECHEAP_API_KEY) creds.push([e.NAMECHEAP_API_USER, e.NAMECHEAP_API_KEY, e.NAMECHEAP_ACCOUNT_NAME || e.NAMECHEAP_API_USER]);
   for (let n = 2; n <= 20; n++) {
     const u = e[`NAMECHEAP_API_USER_${n}`];
     const k = e[`NAMECHEAP_API_KEY_${n}`];
-    if (u && k) creds.push([u, k]);
+    if (u && k) creds.push([u, k, e[`NAMECHEAP_ACCOUNT_NAME_${n}`] || u]);
   }
   if (!creds.length) {
     acc.push({ registrar: "Namecheap", account: "—", ok: false, count: 0, message: "Not connected" });
@@ -209,7 +213,7 @@ async function loadNamecheap(acc: DomainManagerResult["accounts"]) {
   } catch {
     /* ignore */
   }
-  const res = await Promise.all(creds.map(([u, k]) => loadNamecheapAccount(u, k, ip, acc)));
+  const res = await Promise.all(creds.map(([u, k, nm]) => loadNamecheapAccount(u, k, ip, acc, nm)));
   return res.flat();
 }
 
