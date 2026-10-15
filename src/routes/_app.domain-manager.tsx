@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowUpDown, CheckCircle2, Download, RefreshCw, XCircle } from "lucide-react";
@@ -47,6 +47,20 @@ function DomainManagerPage() {
         return String(av).localeCompare(String(bv)) * sort.dir;
       });
   }, [all, q, registrar, account, sort]);
+
+  const [perPage, setPerPage] = useState<number>(50);
+  const [page, setPage] = useState(1);
+  const [bucket, setBucket] = useState<null | 30 | 60 | 90>(null);
+  const pages = perPage ? Math.max(1, Math.ceil(rows.length / perPage)) : 1;
+  const curPage = Math.min(page, pages);
+  const pageRows = perPage ? rows.slice((curPage - 1) * perPage, curPage * perPage) : rows;
+  useEffect(() => setPage(1), [q, registrar, account, sort, perPage]);
+  const inBucket = (d: ManagedDomain, b: 30 | 60 | 90) => {
+    const dl = d.expiresInDays;
+    if (dl == null || dl < 0) return false;
+    return b === 30 ? dl <= 30 : b === 60 ? dl > 30 && dl <= 60 : dl > 60 && dl <= 90;
+  };
+  const due = { 30: rows.filter((d) => inBucket(d, 30)), 60: rows.filter((d) => inBucket(d, 60)), 90: rows.filter((d) => inBucket(d, 90)) };
 
   async function refresh() {
     const fresh = await fetchFn({ data: { refresh: true } });
@@ -132,12 +146,15 @@ function DomainManagerPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((d) => {
+            {pageRows.map((d) => {
               const dl = d.expiresInDays;
               const tone = dl == null ? "" : dl < 0 ? "text-destructive font-medium" : dl < 30 ? "text-destructive" : dl < 60 ? "text-[color:var(--status-warning,theme(colors.amber.600))]" : "text-muted-foreground";
               return (
                 <TableRow key={d.registrar + d.domain}>
-                  <TableCell className="font-mono text-xs">{d.domain}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {d.domain}
+                    {d.source === "sheet" && <Badge variant="outline" className="ml-2 font-sans text-[10px]">From sheet</Badge>}
+                  </TableCell>
                   <TableCell>{d.registrar}</TableCell>
                   <TableCell className="text-sm font-medium">{d.accountName}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{d.accountUsername}</TableCell>
@@ -159,6 +176,55 @@ function DomainManagerPage() {
             )}
           </TableBody>
         </Table>
+      </Card>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <label className="flex items-center gap-2 text-muted-foreground">
+          Show
+          <select className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground" value={perPage} onChange={(e) => setPerPage(Number(e.target.value))}>
+            <option value={10}>10</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={0}>All</option>
+          </select>
+          per page
+        </label>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)}>Previous</Button>
+          <span className="text-muted-foreground">Page {curPage} of {pages}</span>
+          <Button variant="outline" size="sm" disabled={curPage >= pages} onClick={() => setPage(curPage + 1)}>Next</Button>
+        </div>
+      </div>
+
+      <Card className="p-4">
+        <h2 className="mb-3 text-sm font-semibold">Status summary <span className="font-normal text-muted-foreground">(expired domains not counted)</span></h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-md border border-border p-3">
+            <div className="text-xs text-muted-foreground">Total domains</div>
+            <div className="text-2xl font-semibold">{rows.length}</div>
+          </div>
+          {([30, 60, 90] as const).map((b) => (
+            <button key={b} onClick={() => setBucket(bucket === b ? null : b)} className={`rounded-md border p-3 text-left hover:bg-muted/50 ${bucket === b ? "border-primary" : "border-border"}`}>
+              <div className="text-xs text-muted-foreground">{b === 30 ? "Due in 30 days" : b === 60 ? "Due in 31–60 days" : "Due in 61–90 days"}</div>
+              <div className={`text-2xl font-semibold ${b === 30 && due[30].length ? "text-destructive" : ""}`}>{due[b].length}</div>
+            </button>
+          ))}
+        </div>
+        {bucket && (
+          <div className="mt-4">
+            <div className="mb-2 text-sm font-medium">Renewal tasks — {bucket === 30 ? "next 30 days" : bucket === 60 ? "31–60 days" : "61–90 days"}</div>
+            {due[bucket].length ? (
+              <ul className="space-y-1 text-sm">
+                {[...due[bucket]].sort((a, b) => (a.expiresInDays ?? 0) - (b.expiresInDays ?? 0)).map((d) => (
+                  <li key={"t" + d.registrar + d.domain} className="flex flex-wrap justify-between gap-2 border-b border-border/60 pb-1 last:border-0">
+                    <span>Renew <span className="font-mono text-xs">{d.domain}</span> <span className="text-muted-foreground">· {d.registrar} · {d.accountName}</span></span>
+                    <span className="text-xs text-muted-foreground">{d.expires?.slice(0, 10)} ({d.expiresInDays}d){!d.autoRenew && <span className="ml-1 text-destructive">auto-renew off</span>}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-muted-foreground">Nothing due in this window.</p>}
+          </div>
+        )}
       </Card>
 
       {data && (() => {
