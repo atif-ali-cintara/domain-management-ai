@@ -156,7 +156,7 @@ function DomainManagerPage() {
               );
             })}
             {!isLoading && !rows.length && (
-              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-10">No domains found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">No domains found.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
