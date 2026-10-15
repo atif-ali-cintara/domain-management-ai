@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-type SortKey = keyof Pick<ManagedDomain, "domain" | "registrar" | "accountUsername" | "contactEmail" | "expires" | "status">;
+type SortKey = keyof Pick<ManagedDomain, "domain" | "registrar" | "accountName" | "accountUsername" | "contactEmail" | "expires" | "status">;
 
 function DomainManagerPage() {
   const fetchFn = useServerFn(getManagedDomains);
@@ -26,14 +26,14 @@ function DomainManagerPage() {
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "expires", dir: 1 });
 
   const all = data?.domains ?? [];
-  const accountsList = useMemo(() => [...new Set(all.map((d) => d.accountUsername))].sort(), [all]);
+  const accountsList = useMemo(() => [...new Set(all.map((d) => d.accountName))].sort(), [all]);
 
   const rows = useMemo(() => {
     const n = q.trim().toLowerCase();
     return all
       .filter((d) => registrar === "all" || d.registrar === registrar)
-      .filter((d) => account === "all" || d.accountUsername === account)
-      .filter((d) => !n || [d.domain, d.accountUsername, d.contactEmail ?? ""].some((v) => v.toLowerCase().includes(n)))
+      .filter((d) => account === "all" || d.accountName === account)
+      .filter((d) => !n || [d.domain, d.accountName, d.accountUsername, d.contactEmail ?? ""].some((v) => v.toLowerCase().includes(n)))
       .sort((a, b) => {
         const av = a[sort.key] ?? "";
         const bv = b[sort.key] ?? "";
@@ -49,9 +49,9 @@ function DomainManagerPage() {
   }
 
   function exportCsv() {
-    const head = ["Domain", "Registrar", "Account", "Contact email", "Expires", "Days left", "Status", "Auto-renew"];
+    const head = ["Domain", "Registrar", "Account name", "Account username", "Contact email", "Expires", "Days left", "Status", "Auto-renew"];
     const lines = rows.map((d) =>
-      [d.domain, d.registrar, d.accountUsername, d.contactEmail ?? "", d.expires?.slice(0, 10) ?? "", d.expiresInDays ?? "", d.status, d.autoRenew ? "yes" : "no"]
+      [d.domain, d.registrar, d.accountName, d.accountUsername, d.contactEmail ?? "", d.expires?.slice(0, 10) ?? "", d.expiresInDays ?? "", d.status, d.autoRenew ? "yes" : "no"]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(","),
     );
@@ -127,7 +127,8 @@ function DomainManagerPage() {
             <TableRow>
               <H k="domain">Domain</H>
               <H k="registrar">Registrar</H>
-              <H k="accountUsername">Account</H>
+              <H k="accountName">Account name</H>
+              <H k="accountUsername">Username</H>
               <H k="contactEmail">Contact email</H>
               <H k="expires">Expires</H>
               <H k="status">Status</H>
@@ -142,7 +143,8 @@ function DomainManagerPage() {
                 <TableRow key={d.registrar + d.domain}>
                   <TableCell className="font-mono text-xs">{d.domain}</TableCell>
                   <TableCell>{d.registrar}</TableCell>
-                  <TableCell className="text-sm">{d.accountUsername}</TableCell>
+                  <TableCell className="text-sm font-medium">{d.accountName}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{d.accountUsername}</TableCell>
                   <TableCell className="text-sm">{d.contactEmail ?? <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {d.expires ? d.expires.slice(0, 10) : "—"}
