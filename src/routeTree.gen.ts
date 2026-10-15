@@ -17,6 +17,7 @@ import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolidated-email'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppDomainManagerRouteImport } from './routes/_app.domain-manager'
 import { Route as AppDomainsRouteImport } from './routes/_app.domains'
 import { Route as AppHunterRouteImport } from './routes/_app.hunter'
 import { Route as AppIdentitiesRouteImport } from './routes/_app.identities'
@@ -67,6 +68,11 @@ const AppConsolidatedEmailRoute = AppConsolidatedEmailRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDomainManagerRoute = AppDomainManagerRouteImport.update({
+  id: '/domain-manager',
+  path: '/domain-manager',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDomainsRoute = AppDomainsRouteImport.update({
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/companies': typeof AppCompaniesRoute
   '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
+  '/domain-manager': typeof AppDomainManagerRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
   '/identities': typeof AppIdentitiesRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/companies': typeof AppCompaniesRoute
   '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
+  '/domain-manager': typeof AppDomainManagerRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
   '/identities': typeof AppIdentitiesRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/_app/companies': typeof AppCompaniesRoute
   '/_app/consolidated-email': typeof AppConsolidatedEmailRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/domain-manager': typeof AppDomainManagerRoute
   '/_app/domains': typeof AppDomainsRoute
   '/_app/hunter': typeof AppHunterRoute
   '/_app/identities': typeof AppIdentitiesRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/consolidated-email'
     | '/dashboard'
+    | '/domain-manager'
     | '/domains'
     | '/hunter'
     | '/identities'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/consolidated-email'
     | '/dashboard'
+    | '/domain-manager'
     | '/domains'
     | '/hunter'
     | '/identities'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/_app/companies'
     | '/_app/consolidated-email'
     | '/_app/dashboard'
+    | '/_app/domain-manager'
     | '/_app/domains'
     | '/_app/hunter'
     | '/_app/identities'
@@ -326,6 +338,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/domain-manager': {
+      id: '/_app/domain-manager'
+      path: '/domain-manager'
+      fullPath: '/domain-manager'
+      preLoaderRoute: typeof AppDomainManagerRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/domains': {
@@ -421,6 +440,7 @@ interface AppRouteChildren {
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppConsolidatedEmailRoute: typeof AppConsolidatedEmailRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDomainManagerRoute: typeof AppDomainManagerRoute
   AppDomainsRoute: typeof AppDomainsRoute
   AppHunterRoute: typeof AppHunterRoute
   AppIdentitiesRoute: typeof AppIdentitiesRoute
@@ -439,6 +459,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCompaniesRoute: AppCompaniesRoute,
   AppConsolidatedEmailRoute: AppConsolidatedEmailRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppDomainManagerRoute: AppDomainManagerRoute,
   AppDomainsRoute: AppDomainsRoute,
   AppHunterRoute: AppHunterRoute,
   AppIdentitiesRoute: AppIdentitiesRoute,
