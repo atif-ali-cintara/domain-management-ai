@@ -54,9 +54,9 @@ function DomainManagerPage() {
   }
 
   function exportCsv() {
-    const head = ["Domain", "Registrar", "Account name", "Account username", "Contact email", "Expires", "Days left", "Status", "Auto-renew", "Privacy"];
+    const head = ["Domain", "Registrar", "Account name", "Account username", "Contact email", "Expires", "Days left", "Status", "Auto-renew", "Privacy", "Importance", "Category"];
     const lines = rows.map((d) =>
-      [d.domain, d.registrar, d.accountName, d.accountUsername, d.contactEmail ?? "", d.expires?.slice(0, 10) ?? "", d.expiresInDays ?? "", d.status, d.autoRenew ? "yes" : "no", d.privacy == null ? "" : d.privacy ? "on" : "off"]
+      [d.domain, d.registrar, d.accountName, d.accountUsername, d.contactEmail ?? "", d.expires?.slice(0, 10) ?? "", d.expiresInDays ?? "", d.status, d.autoRenew ? "yes" : "no", d.privacy == null ? "" : d.privacy ? "on" : "off", d.importance ?? "", d.category ?? ""]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(","),
     );
@@ -127,6 +127,8 @@ function DomainManagerPage() {
               <H k="status">Status</H>
               <TableHead>Auto-renew</TableHead>
               <TableHead>Privacy</TableHead>
+              <TableHead>Importance</TableHead>
+              <TableHead>Category</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -147,11 +149,13 @@ function DomainManagerPage() {
                   <TableCell><Badge variant={d.status === "ACTIVE" ? "secondary" : "outline"}>{d.status}</Badge></TableCell>
                   <TableCell className="text-sm">{d.autoRenew ? "On" : <span className="text-destructive">Off</span>}</TableCell>
                   <TableCell className="text-sm">{d.privacy == null ? <span className="text-muted-foreground">—</span> : d.privacy ? "On" : "Off"}</TableCell>
+                  <TableCell className="text-sm">{d.importance ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell>{d.category ? <Badge variant={d.category === "Critical" ? "destructive" : "outline"}>{d.category}</Badge> : <span className="text-sm text-muted-foreground">—</span>}</TableCell>
                 </TableRow>
               );
             })}
             {!isLoading && !rows.length && (
-              <TableRow><TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-10">No domains found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-10">No domains found.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>

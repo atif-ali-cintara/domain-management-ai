@@ -13,6 +13,8 @@ export type ManagedDomain = {
   status: string;
   autoRenew: boolean;
   privacy?: boolean;
+  importance?: string;
+  category?: string;
 };
 
 // 101domain account domains (entered manually until API access is set up).
@@ -271,6 +273,8 @@ export const getManagedDomains = createServerFn({ method: "POST" })
         status: "ACTIVE",
         autoRenew: true,
         privacy: true,
+        importance: "Important",
+        category: "Critical",
       };
     });
     accounts.push({
