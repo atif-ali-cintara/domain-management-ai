@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUpDown, Download, RefreshCw } from "lucide-react";
+import { ArrowUpDown, CheckCircle2, Download, RefreshCw, XCircle } from "lucide-react";
 import { getManagedDomains, type ManagedDomain } from "@/lib/domain-manager.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,18 +93,6 @@ function DomainManagerPage() {
         </div>
       </div>
 
-      {data && (
-        <div className="flex flex-wrap gap-2 text-xs">
-          {data.accounts.map((a, i) => (
-            <div key={i} className="rounded-md border border-border bg-card px-2.5 py-1.5">
-              <span className="font-medium">{a.registrar}</span>
-              <span className="text-muted-foreground"> · {a.account} · </span>
-              {a.ok ? <span>{a.count} domains</span> : <span className="text-destructive">{a.message}</span>}
-              {a.ok && a.message && <span className="text-muted-foreground"> ({a.message})</span>}
-            </div>
-          ))}
-        </div>
-      )}
       {error && <div className="text-sm text-destructive">{(error as Error).message}</div>}
 
       <div className="flex flex-wrap gap-2">
@@ -161,6 +149,64 @@ function DomainManagerPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {data && (() => {
+        const connected = data.accounts.filter((a) => a.ok);
+        const notConnected = data.accounts.filter((a) => !a.ok);
+        const totalDomains = connected.reduce((s, a) => s + a.count, 0);
+        return (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[color:var(--status-success,theme(colors.emerald.600))]" />
+                <h2 className="text-sm font-semibold">API connected</h2>
+                <Badge variant="secondary" className="ml-auto">{connected.length} account{connected.length === 1 ? "" : "s"}</Badge>
+              </div>
+              {connected.length ? (
+                <ul className="space-y-1.5 text-sm">
+                  {connected.map((a, i) => (
+                    <li key={i} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-1.5 last:border-0 last:pb-0">
+                      <span>
+                        <span className="font-medium">{a.registrar}</span>
+                        <span className="text-muted-foreground"> · {a.account}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {a.count} domain{a.count === 1 ? "" : "s"}
+                        {a.message && <span className="ml-1">({a.message})</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No accounts connected yet.</p>
+              )}
+              <p className="mt-3 text-xs text-muted-foreground">{totalDomains} domains pulled from connected accounts.</p>
+            </Card>
+            <Card className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Not connected</h2>
+                <Badge variant="outline" className="ml-auto">{notConnected.length} account{notConnected.length === 1 ? "" : "s"}</Badge>
+              </div>
+              {notConnected.length ? (
+                <ul className="space-y-1.5 text-sm">
+                  {notConnected.map((a, i) => (
+                    <li key={i} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-1.5 last:border-0 last:pb-0">
+                      <span>
+                        <span className="font-medium">{a.registrar}</span>
+                        <span className="text-muted-foreground"> · {a.account}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">{a.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">All accounts are connected.</p>
+              )}
+            </Card>
+          </div>
+        );
+      })()}
     </div>
   );
 }
