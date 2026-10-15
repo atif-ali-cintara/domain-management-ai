@@ -38,14 +38,12 @@ async function mapLimit<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): 
 const days = (iso: string | null) =>
   iso ? Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000) : null;
 
-async function loadGoDaddy(acc: DomainManagerResult["accounts"]): Promise<ManagedDomain[]> {
-  const key = process.env.GODADDY_API_KEY;
-  const secret = process.env.GODADDY_API_SECRET;
-  const account = "GoDaddy Main";
-  if (!key || !secret) {
-    acc.push({ registrar: "GoDaddy", account, ok: false, count: 0, message: "Not connected" });
-    return [];
-  }
+async function loadGoDaddyAccount(
+  key: string,
+  secret: string,
+  account: string,
+  acc: DomainManagerResult["accounts"],
+): Promise<ManagedDomain[]> {
   const headers = { Authorization: `sso-key ${key}:${secret}`, Accept: "application/json" };
   const list: any[] = [];
   try {
@@ -98,6 +96,24 @@ async function loadGoDaddy(acc: DomainManagerResult["accounts"]): Promise<Manage
     message: emailFails ? `Contact email unavailable for ${emailFails} domains` : undefined,
   });
   return out;
+}
+
+async function loadGoDaddy(acc: DomainManagerResult["accounts"]): Promise<ManagedDomain[]> {
+  const e = process.env;
+  const creds: { key: string; secret: string; name: string }[] = [];
+  if (e.GODADDY_API_KEY && e.GODADDY_API_SECRET)
+    creds.push({ key: e.GODADDY_API_KEY, secret: e.GODADDY_API_SECRET, name: e.GODADDY_ACCOUNT_NAME || "GoDaddy Main" });
+  for (let n = 2; n <= 20; n++) {
+    const k = e[`GODADDY_API_KEY_${n}`];
+    const s = e[`GODADDY_API_SECRET_${n}`];
+    if (k && s) creds.push({ key: k, secret: s, name: e[`GODADDY_ACCOUNT_NAME_${n}`] || `GoDaddy Account ${n}` });
+  }
+  if (!creds.length) {
+    acc.push({ registrar: "GoDaddy", account: "—", ok: false, count: 0, message: "Not connected" });
+    return [];
+  }
+  const res = await Promise.all(creds.map((c) => loadGoDaddyAccount(c.key, c.secret, c.name, acc)));
+  return res.flat();
 }
 
 function attrs(s: string) {

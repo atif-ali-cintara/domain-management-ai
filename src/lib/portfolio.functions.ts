@@ -44,11 +44,25 @@ type GoDaddyDomain = {
 };
 
 async function fetchGoDaddy(): Promise<{ list: GoDaddyDomain[]; error?: string }> {
-  const key = process.env.GODADDY_API_KEY;
-  const secret = process.env.GODADDY_API_SECRET;
-  if (!key || !secret) {
+  const e = process.env;
+  const creds: [string, string][] = [];
+  if (e.GODADDY_API_KEY && e.GODADDY_API_SECRET) creds.push([e.GODADDY_API_KEY, e.GODADDY_API_SECRET]);
+  for (let n = 2; n <= 20; n++) {
+    const k = e[`GODADDY_API_KEY_${n}`];
+    const s = e[`GODADDY_API_SECRET_${n}`];
+    if (k && s) creds.push([k, s]);
+  }
+  if (!creds.length) {
     return { list: [], error: "GoDaddy credentials missing (GODADDY_API_KEY / GODADDY_API_SECRET)" };
   }
+  const results = await Promise.all(creds.map(([k, s]) => fetchGoDaddyAccount(k, s)));
+  const seen = new Set<string>();
+  const list = results.flatMap((r) => r.list).filter((d) => !seen.has(d.domain) && !!seen.add(d.domain));
+  const errors = results.map((r) => r.error).filter(Boolean);
+  return { list, error: errors.length ? errors.join(" | ") : undefined };
+}
+
+async function fetchGoDaddyAccount(key: string, secret: string): Promise<{ list: GoDaddyDomain[]; error?: string }> {
   const out: GoDaddyDomain[] = [];
   let marker: string | undefined;
   try {
