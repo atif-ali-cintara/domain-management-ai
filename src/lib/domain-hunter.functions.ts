@@ -258,14 +258,30 @@ async function egressIp(): Promise<string> {
 }
 
 // Namecheap domains.check — authoritative availability + premium pricing.
+// Tries every configured Namecheap account until one accepts the request.
 async function namecheapCheck(
   domains: string[]
 ): Promise<{ results: Map<string, DomainResult>; issue?: string }> {
-  const results = new Map<string, DomainResult>();
-  const user = process.env.NAMECHEAP_API_USER;
-  const key = process.env.NAMECHEAP_API_KEY;
-  if (!user || !key || domains.length === 0) return { results, issue: user && key ? undefined : "Namecheap not configured" };
+  const creds: [string, string][] = [];
+  for (const n of ["", ...Array.from({ length: 19 }, (_, i) => `_${i + 2}`)]) {
+    const u = process.env[`NAMECHEAP_API_USER${n}`];
+    const k = process.env[`NAMECHEAP_API_KEY${n}`];
+    if (u && k) creds.push([u, k]);
+  }
+  if (!creds.length || domains.length === 0) return { results: new Map(), issue: creds.length ? undefined : "Namecheap not configured" };
   const ip = await egressIp();
+  let last: { results: Map<string, DomainResult>; issue?: string } = { results: new Map() };
+  for (const [user, key] of creds) {
+    last = await namecheapCheckWith(domains, user, key, ip);
+    if (!last.issue) return last;
+  }
+  return last;
+}
+
+async function namecheapCheckWith(
+  domains: string[], user: string, key: string, ip: string
+): Promise<{ results: Map<string, DomainResult>; issue?: string }> {
+  const results = new Map<string, DomainResult>();
   for (let i = 0; i < domains.length; i += 50) {
     const chunk = domains.slice(i, i + 50);
     const url = new URL("https://api.namecheap.com/xml.response");
