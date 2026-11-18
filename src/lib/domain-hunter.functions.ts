@@ -29,7 +29,7 @@ const MapBranchesInput = z.object({
   inspiration: z.string().max(2000).optional(),
 });
 
-type DomainResult = {
+export type DomainResult = {
   domain: string;
   available: boolean | null;
   price: number | null;
@@ -301,7 +301,7 @@ async function namecheapCheck(
   return { results };
 }
 
-async function checkMany(domains: string[], attempts = 3): Promise<{ results: DomainResult[]; issue?: string }> {
+export async function checkMany(domains: string[], attempts = 3): Promise<{ results: DomainResult[]; issue?: string }> {
   const nc = await namecheapCheck(domains);
   const results = await mapWithConcurrency(domains, 4, (d) => {
     const hit = nc.results.get(d.toLowerCase());

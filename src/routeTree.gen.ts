@@ -17,6 +17,7 @@ import { Route as AppAuditLogRouteImport } from './routes/_app.audit-log'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppConsolidatedEmailRouteImport } from './routes/_app.consolidated-email'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppDomainCheckerRouteImport } from './routes/_app.domain-checker'
 import { Route as AppDomainManagerRouteImport } from './routes/_app.domain-manager'
 import { Route as AppDomainsRouteImport } from './routes/_app.domains'
 import { Route as AppHunterRouteImport } from './routes/_app.hunter'
@@ -68,6 +69,11 @@ const AppConsolidatedEmailRoute = AppConsolidatedEmailRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDomainCheckerRoute = AppDomainCheckerRouteImport.update({
+  id: '/domain-checker',
+  path: '/domain-checker',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDomainManagerRoute = AppDomainManagerRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/companies': typeof AppCompaniesRoute
   '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
+  '/domain-checker': typeof AppDomainCheckerRoute
   '/domain-manager': typeof AppDomainManagerRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/companies': typeof AppCompaniesRoute
   '/consolidated-email': typeof AppConsolidatedEmailRoute
   '/dashboard': typeof AppDashboardRoute
+  '/domain-checker': typeof AppDomainCheckerRoute
   '/domain-manager': typeof AppDomainManagerRoute
   '/domains': typeof AppDomainsRoute
   '/hunter': typeof AppHunterRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_app/companies': typeof AppCompaniesRoute
   '/_app/consolidated-email': typeof AppConsolidatedEmailRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/domain-checker': typeof AppDomainCheckerRoute
   '/_app/domain-manager': typeof AppDomainManagerRoute
   '/_app/domains': typeof AppDomainsRoute
   '/_app/hunter': typeof AppHunterRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/consolidated-email'
     | '/dashboard'
+    | '/domain-checker'
     | '/domain-manager'
     | '/domains'
     | '/hunter'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/consolidated-email'
     | '/dashboard'
+    | '/domain-checker'
     | '/domain-manager'
     | '/domains'
     | '/hunter'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/_app/companies'
     | '/_app/consolidated-email'
     | '/_app/dashboard'
+    | '/_app/domain-checker'
     | '/_app/domain-manager'
     | '/_app/domains'
     | '/_app/hunter'
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/domain-checker': {
+      id: '/_app/domain-checker'
+      path: '/domain-checker'
+      fullPath: '/domain-checker'
+      preLoaderRoute: typeof AppDomainCheckerRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/domain-manager': {
@@ -440,6 +459,7 @@ interface AppRouteChildren {
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppConsolidatedEmailRoute: typeof AppConsolidatedEmailRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDomainCheckerRoute: typeof AppDomainCheckerRoute
   AppDomainManagerRoute: typeof AppDomainManagerRoute
   AppDomainsRoute: typeof AppDomainsRoute
   AppHunterRoute: typeof AppHunterRoute
@@ -459,6 +479,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCompaniesRoute: AppCompaniesRoute,
   AppConsolidatedEmailRoute: AppConsolidatedEmailRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppDomainCheckerRoute: AppDomainCheckerRoute,
   AppDomainManagerRoute: AppDomainManagerRoute,
   AppDomainsRoute: AppDomainsRoute,
   AppHunterRoute: AppHunterRoute,

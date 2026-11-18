@@ -18,6 +18,7 @@ import {
   Lock,
   LogOut,
   Mail,
+  SearchCheck,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { useEffect, useState } from "react";
@@ -30,6 +31,7 @@ const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/domains", label: "Domains", icon: Globe },
   { to: "/domain-manager", label: "Domain Manager", icon: Globe },
+  { to: "/domain-checker", label: "Domain Checker", icon: SearchCheck },
   { to: "/hunter", label: "Domain Hunter", icon: Sparkles },
   { to: "/identities", label: "Identities", icon: Users },
   { to: "/companies", label: "Companies", icon: Building2 },
