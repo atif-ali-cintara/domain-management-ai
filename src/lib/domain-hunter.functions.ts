@@ -38,6 +38,8 @@ export type DomainResult = {
   source?: "namecheap" | "dns" | "registry";
   note?: string;
   likely?: boolean;
+  isPremium?: boolean;
+  renewPrice?: number | null;
 };
 
 export type Branch = {
@@ -289,9 +291,12 @@ async function namecheapCheck(
       if (!d) continue;
       const premium = attrs.ispremiumname === "true";
       const pp = Number(attrs.premiumregistrationprice);
+      const rp = Number(attrs.premiumrenewalprice);
       results.set(d, {
         domain: d,
         available: attrs.available === "true",
+        isPremium: premium,
+        renewPrice: premium && rp > 0 ? rp : null,
         price: premium && pp > 0 ? pp : null,
         currency: "USD",
         source: "namecheap",

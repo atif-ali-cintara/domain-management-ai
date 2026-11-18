@@ -16,7 +16,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 const MAX = 200;
 const BATCH = 25;
-type Filter = "all" | "available" | "taken" | "ours" | "unknown";
+type Filter = "all" | "available" | "premium" | "taken" | "ours" | "unknown";
+
+// Typical first-year standard registration price (USD) at Namecheap.
+const TLD_PRICE: Record<string, number> = {
+  com: 11.28, net: 13.98, org: 10.98, co: 28.98, io: 59.98, ai: 89.98, app: 14.98, dev: 12.98,
+  us: 8.98, biz: 17.98, info: 18.98, xyz: 11.98, online: 32.98, site: 29.98, store: 54.98, shop: 32.98,
+  club: 14.98, live: 24.98, tech: 49.98, pro: 19.98, company: 17.98, services: 29.98, solutions: 29.98,
+  house: 24.98, homes: 29.98, realty: 249.98, realtor: 39.98, estate: 34.98, properties: 34.98,
+  property: 249.98, rentals: 34.98, rent: 79.98, land: 29.98, build: 74.98, builders: 29.98,
+  construction: 34.98, contractors: 34.98, repair: 29.98, cleaning: 34.98, me: 19.98, tv: 34.98,
+  cc: 12.98, ca: 14.98, uk: 9.98, "co.uk": 9.98, de: 9.98, health: 79.98, agency: 24.98, group: 19.98,
+};
+export function standardPrice(domain: string): number | null {
+  const parts = domain.split(".");
+  return TLD_PRICE[parts.slice(1).join(".")] ?? TLD_PRICE[parts[parts.length - 1]] ?? null;
+}
+const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function parseDomainList(text: string): string[] {
   const out = new Set<string>();
@@ -80,27 +96,36 @@ function DomainCheckerPage() {
   const statusOf = (d: string) => {
     const r = results[d];
     if (!r || r === "pending") return "pending";
-    if (r.available === true) return "available";
+    if (r.available === true) return r.isPremium || r.price ? "premium" : "available";
     if (r.available === false) return "taken";
     return "unknown";
   };
   const counts = {
     all: order.length,
     available: order.filter((d) => statusOf(d) === "available").length,
+    premium: order.filter((d) => statusOf(d) === "premium").length,
     taken: order.filter((d) => statusOf(d) === "taken").length,
     ours: order.filter((d) => ours.has(d)).length,
     unknown: order.filter((d) => statusOf(d) === "unknown").length,
   };
   const rows = order.filter((d) => filter === "all" || (filter === "ours" ? ours.has(d) : statusOf(d) === filter));
-  const availableList = order.filter((d) => statusOf(d) === "available");
+  const availableList = order.filter((d) => statusOf(d) === "available" || statusOf(d) === "premium");
+  const costOf = (d: string) => {
+    const r = results[d];
+    if (!r || r === "pending" || r.available !== true) return null;
+    if (r.price) return { amount: r.price, premium: true, estimate: false };
+    if (r.isPremium) return null;
+    const sp = standardPrice(d);
+    return sp != null ? { amount: sp, premium: false, estimate: true } : null;
+  };
 
   function exportCsv() {
-    const head = ["Domain", "Characters", "Availability", "Premium price", "Source", "In portfolio", "Account", "Registrar", "Expires", "Days left"];
+    const head = ["Domain", "Characters", "Availability", "Premium", "Cost (USD, 1st yr)", "Source", "In portfolio", "Account", "Registrar", "Expires", "Days left"];
     const lines = order.map((d) => {
       const r = results[d];
       const o = ours.get(d);
       const rr = r && r !== "pending" ? r : null;
-      return [d, d.split(".")[0].length, statusOf(d), rr?.price ?? "", rr?.source ?? "", o ? "Yes" : "No", o?.accountName ?? "", o?.registrar ?? "", o?.expires ?? "", o?.expiresInDays ?? ""]
+      return [d, d.split(".")[0].length, statusOf(d), statusOf(d) === "premium" ? "Yes" : "No", costOf(d)?.amount ?? "", rr?.source ?? "", o ? "Yes" : "No", o?.accountName ?? "", o?.registrar ?? "", o?.expires ?? "", o?.expiresInDays ?? ""]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
     });
     const blob = new Blob([[head.join(","), ...lines].join("\n")], { type: "text/csv" });
@@ -138,7 +163,7 @@ function DomainCheckerPage() {
         <Card className="overflow-hidden p-0">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
             <div className="flex flex-wrap gap-1">
-              {(["all", "available", "taken", "ours", "unknown"] as Filter[]).map((f) => (
+              {(["all", "available", "premium", "taken", "ours", "unknown"] as Filter[]).map((f) => (
                 <Button key={f} size="sm" variant={filter === f ? "default" : "ghost"} onClick={() => setFilter(f)} className="capitalize">
                   {f === "ours" ? "Ours" : f} ({counts[f]})
                 </Button>
@@ -156,6 +181,7 @@ function DomainCheckerPage() {
               <TableRow>
                 <TableHead>Domain</TableHead>
                 <TableHead>Availability</TableHead>
+                <TableHead>Cost</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>In our portfolio</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -172,9 +198,18 @@ function DomainCheckerPage() {
                     <TableCell className="font-mono text-xs">{d} <span className="text-muted-foreground">({d.split(".")[0].length})</span></TableCell>
                     <TableCell>
                       {s === "pending" && <span className="text-xs text-muted-foreground">Checking…</span>}
-                      {s === "available" && <Badge>{rr?.price ? `Premium $${rr.price}` : rr?.likely ? "Likely available" : "Available"}</Badge>}
+                      {s === "available" && <Badge>{rr?.likely ? "Likely available" : "Available"}</Badge>}
+                      {s === "premium" && <Badge variant="destructive">Premium</Badge>}
                       {s === "taken" && <Badge variant="secondary">Taken</Badge>}
                       {s === "unknown" && <Badge variant="outline" title={rr?.error ?? undefined}>Unknown</Badge>}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {(() => {
+                        const c = costOf(d);
+                        if (c) return <span className={c.premium ? "font-semibold" : ""}>{c.estimate ? "~" : ""}{money(c.amount)}<span className="text-muted-foreground">{c.premium ? " premium" : "/yr"}</span>{rr?.renewPrice ? <span className="block text-muted-foreground">renews {money(rr.renewPrice)}/yr</span> : null}</span>;
+                        if (s === "premium") return <span className="text-muted-foreground">Price on request</span>;
+                        return <span className="text-muted-foreground">—</span>;
+                      })()}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{rr?.source === "namecheap" ? "Namecheap" : rr?.source === "dns" ? "DNS" : rr?.source === "registry" ? "Registry" : "—"}</TableCell>
                     <TableCell className="text-xs">
@@ -192,7 +227,7 @@ function DomainCheckerPage() {
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right">
-                      {s === "available" && <Button size="sm" variant="outline" asChild><a href={`https://www.namecheap.com/domains/registration/results/?domain=${d}`} target="_blank" rel="noreferrer">Register</a></Button>}
+                      {(s === "available" || s === "premium") && <Button size="sm" variant="outline" asChild><a href={`https://www.namecheap.com/domains/registration/results/?domain=${d}`} target="_blank" rel="noreferrer">Register</a></Button>}
                       {s === "unknown" && <Button size="sm" variant="ghost" onClick={() => recheck(d)}><RefreshCw className="mr-1 h-3 w-3" />Recheck</Button>}
                     </TableCell>
                   </TableRow>
